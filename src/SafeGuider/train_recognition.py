@@ -37,7 +37,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from src.SafeGuider import CLIPEncoder  # noqa: E402
-from src.SafeGuider.data import (  # noqa: E402
+from src.utils import (  # noqa: E402
     GuardChatSample,
     load_guardchat,
     load_safe_prompts,

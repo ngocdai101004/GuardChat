@@ -34,7 +34,7 @@ from . import (
     SafetyAwareBeamSearch,
     ThreeLayerClassifier,
 )
-from .data import GuardChatSample
+from src.utils import GuardChatSample
 
 
 @dataclass

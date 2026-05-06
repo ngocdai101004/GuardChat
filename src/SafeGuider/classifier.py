@@ -26,7 +26,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .data import NUM_CATEGORIES
+from src.utils import NUM_CATEGORIES
 
 
 class MultiLabelClassifier(nn.Module):

@@ -28,13 +28,13 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 # Vendored re-export (sys.path setup happens in this package's __init__).
 from . import CLIPEncoder
 from .classifier import MultiLabelClassifier
-from .data import (
+from src.utils import (
     CATEGORIES,
     NUM_CATEGORIES,
     GuardChatSample,
     split_texts_and_labels,
+    summarise_recognition,
 )
-from .metrics import summarise_recognition
 
 
 # ------------------------ Inference pipeline ------------------------ #

@@ -51,15 +51,15 @@ from beam_search import (  # noqa: E402
 )
 
 from .classifier import MultiLabelClassifier
-from .data import (
+# Re-export shared GuardChat utilities so legacy imports such as
+# ``from src.SafeGuider import GuardChatSample`` keep working.
+from src.utils import (  # noqa: E402
     CATEGORIES,
     GuardChatSample,
     load_guardchat,
     load_safe_prompts,
     label_vector_from_labels,
     flatten_conversation,
-)
-from .metrics import (
     macro_f1,
     per_class_f1,
     recall_score,

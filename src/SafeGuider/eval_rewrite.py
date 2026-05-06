@@ -37,8 +37,7 @@ from src.SafeGuider import (  # noqa: E402
     DEFAULT_SAFETY_THRESHOLD,
     DEFAULT_SIMILARITY_FLOOR,
 )
-from src.SafeGuider.data import load_guardchat  # noqa: E402
-from src.SafeGuider.metrics import clip_cosine_similarity  # noqa: E402
+from src.utils import clip_cosine_similarity, load_guardchat  # noqa: E402
 from src.SafeGuider.rewrite import RewritePipeline  # noqa: E402
 
 

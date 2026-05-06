@@ -26,8 +26,7 @@ _REPO_ROOT = os.path.normpath(os.path.join(_HERE, "..", ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.SafeGuider.data import load_guardchat  # noqa: E402
-from src.SafeGuider.metrics import summarise_recognition  # noqa: E402
+from src.utils import load_guardchat, summarise_recognition  # noqa: E402
 from src.SafeGuider.recognition import RecognitionPipeline  # noqa: E402
 
 

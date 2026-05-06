@@ -1,0 +1,42 @@
+# GuardChat - benchmark dependencies.
+#
+# Tested with Python 3.10 / 3.11 / 3.12. PyTorch is the only hard dep
+# required for ALL baselines; the rest are scoped to specific ones.
+#
+# Install with:
+#   pip install -r requirements.txt
+#
+# For GPU-specific PyTorch wheels (CUDA build matching your driver),
+# follow https://pytorch.org/get-started/locally/ first, then install
+# the rest of this file with `--no-deps` if needed:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+
+# ---------------- Core (all baselines) ----------------
+torch>=2.1
+numpy>=1.23
+tqdm>=4.60
+
+# ---------------- HuggingFace stack -------------------
+# transformers >= 4.43 is required for Llama 3.1 / Llama-Guard-3
+# (used by src/LlamaGuard, src/Llama, src/Qwen, src/BERT, and the
+# CLIP encoder vendored under vendors/SafeGuider/).
+transformers>=4.43
+accelerate>=0.26
+huggingface_hub>=0.20
+# `safetensors` is a transitive dep but pinning prevents an annoying
+# "non-contiguous tensor" save error on some BERT backbones (Issue
+# #15123).
+safetensors>=0.4.2
+
+# ---------------- Gemini API (optional) ---------------
+# Required ONLY for src/Gemini/. Skip if you are not running the Gemini
+# rewriting baseline.
+google-genai>=0.3
+
+# ---------------- Quantisation (optional) -------------
+# Required ONLY when running with `--dtype int8` or `--dtype nf4`
+# (LlamaGuard, Qwen, Llama). bitsandbytes ships CUDA wheels on Linux
+# and Windows; macOS users must skip 4-bit / 8-bit and use bfloat16 or
+# float16 instead.
+bitsandbytes>=0.43; platform_system != "Darwin"
