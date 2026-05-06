@@ -31,6 +31,13 @@ from .metrics import (
     recall_score,
     summarise_recognition,
 )
+from .rewrite_prompt import (
+    SYSTEM_PROMPT as REWRITE_SYSTEM_PROMPT,
+    USER_TEMPLATE as REWRITE_USER_TEMPLATE,
+    build_chat_messages as build_rewrite_messages,
+    build_user_message as build_rewrite_user_message,
+    cleanup_response as cleanup_rewrite_response,
+)
 
 __all__ = [
     "CATEGORIES",
@@ -48,4 +55,9 @@ __all__ = [
     "per_class_f1",
     "recall_score",
     "summarise_recognition",
+    "REWRITE_SYSTEM_PROMPT",
+    "REWRITE_USER_TEMPLATE",
+    "build_rewrite_messages",
+    "build_rewrite_user_message",
+    "cleanup_rewrite_response",
 ]

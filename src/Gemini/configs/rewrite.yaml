@@ -1,0 +1,33 @@
+# Gemini 2.5 Flash - Task 2 (NSFW Concept Removal via Prompt Rewriting).
+#
+# API-only baseline: no weights are downloaded. Authenticate via
+# GEMINI_API_KEY / GOOGLE_API_KEY environment variables (free key
+# available at https://aistudio.google.com/).
+#
+# Library versions (tested):
+#   google-genai       >= 0.3       (the new Gemini SDK; `from google import genai`)
+#   transformers       >= 4.43      (only for the shared CLIP encoder used
+#                                    when computing CLIP cosine similarity)
+#   torch              >= 2.1
+#   numpy              >= 1.23
+
+data:
+  test: data/guardchat/test.jsonl
+
+api:
+  model: gemini-2.5-flash
+  api_key: null                    # null => read GEMINI_API_KEY / GOOGLE_API_KEY env
+  retries: 3
+  backoff_seconds: 2.0
+  request_timeout: 60.0
+  relax_safety: true               # set false to keep default safety thresholds
+
+generation:
+  max_output_tokens: 256
+  temperature: 0.0                 # deterministic rewrites
+
+clip_encoder:
+  model_name: openai/clip-vit-large-patch14   # same as SafeGuider Task 2
+
+output:
+  results: results/gemini_task2.json

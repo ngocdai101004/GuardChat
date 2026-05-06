@@ -1,0 +1,30 @@
+# Llama-3.1-8B-Instruct - Task 2 (NSFW Concept Removal via Prompt Rewriting).
+#
+# Loaded from a local snapshot under weights/. Inference only - the
+# rewriter is configured entirely by the shared system prompt in
+# src/utils/rewrite_prompt.py.
+#
+# Library versions (tested):
+#   torch              >= 2.1
+#   transformers       >= 4.43        (Llama 3.1 architecture)
+#   accelerate         >= 0.26
+#   huggingface_hub    >= 0.20        (snapshot_download)
+#   bitsandbytes       >= 0.43        (only for dtype: int8 / nf4)
+
+data:
+  test: data/guardchat/test.jsonl
+
+model:
+  weights: src/Llama/weights/Llama-3.1-8B-Instruct
+  dtype: bfloat16                     # bfloat16 | float16 | float32 | int8 | nf4
+  device: null                        # null = device_map='auto'
+
+generation:
+  max_new_tokens: 200                 # rewritten prompts rarely exceed ~150 words
+  do_sample: false                    # deterministic rewrites
+
+clip_encoder:
+  model_name: openai/clip-vit-large-patch14   # same as SafeGuider Task 2
+
+output:
+  results: results/llama_task2.json
