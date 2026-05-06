@@ -1,11 +1,10 @@
 # BiLSTM — GuardChat Task 1 Baseline
 
-PyTorch port of the stacked Bidirectional-LSTM in
-`vendors/BiLSTM/sentiment_analysis.py`, adapted to the GuardChat
-multi-label unsafe text recognition task. The CLI surface, output JSON
-schema, and metric definitions are kept identical to
-`src/SafeGuider/` so a single benchmark aggregator can compose Table 1
-across both baselines.
+PyTorch port of a stacked Bidirectional-LSTM (originally a Keras
+sentiment classifier), adapted to the GuardChat multi-label unsafe
+text recognition task. The CLI surface, output JSON schema, and metric
+definitions are kept identical to `src/SafeGuider/` so a single
+benchmark aggregator can compose Table 1 across both baselines.
 
 ---
 

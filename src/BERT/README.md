@@ -6,12 +6,10 @@ schema, and metric definitions are kept identical to
 `src/SafeGuider/` and `src/BiLSTM/` so a single benchmark aggregator
 composes Table 1 across all three baselines.
 
-The reference notebook (`vendors/BERT/mental_bert.py`) trained a
-single-label softmax head over four classes on a sentiment dataset; we
-reuse the encoder fine-tuning recipe but replace the head with
-`AutoModelForSequenceClassification(problem_type="multi_label_classification")`,
-which switches the loss to BCE-with-logits and exposes six independent
-sigmoid outputs over the canonical GuardChat categories.
+The head is `AutoModelForSequenceClassification` with
+`problem_type="multi_label_classification"`, which switches the loss
+to BCE-with-logits and exposes six independent sigmoid outputs over
+the canonical GuardChat categories.
 
 ---
 

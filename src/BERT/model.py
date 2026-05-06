@@ -6,11 +6,10 @@ to BCE-with-logits over six independent sigmoid outputs - matching the
 schema produced by SafeGuider's :class:`MultiLabelClassifier` and the
 PyTorch BiLSTM head.
 
-The reference Colab notebook (vendors/BERT/mental_bert.py) used a
-single-label cross-entropy head over four sentiment classes; here we
-keep the encoder backbone (default ``bert-base-uncased``, matching the
-paper's BERT citation) and swap the head for multi-label classification
-over the six GuardChat NSFW categories.
+Default backbone is ``bert-base-uncased`` (matches the paper's BERT
+citation in Section 6.1). Pass ``--model-name <hf-id>`` to swap in any
+other HuggingFace encoder that supports
+``problem_type="multi_label_classification"``.
 """
 
 from __future__ import annotations

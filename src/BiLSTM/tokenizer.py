@@ -1,10 +1,9 @@
 """Word-level tokenizer + vocab for the BiLSTM baseline.
 
-The reference Colab notebook (vendors/BiLSTM/sentiment_analysis.py) builds
-its vocabulary with torchtext's ``basic_english`` tokenizer and a fixed
-vocab cap. torchtext is now in maintenance mode and ships only on a
-narrow Python/PyTorch matrix, so we re-implement the same idea with the
-standard library:
+The reference Keras pipeline used torchtext's ``basic_english``
+tokenizer and a fixed vocab cap. torchtext is now in maintenance mode
+and ships only on a narrow Python/PyTorch matrix, so we re-implement
+the same idea with the standard library:
 
     text  -> ``preprocess_text``  (URL/HTML strip, punctuation/digit
                                    replacement, emoji strip, lowercase)

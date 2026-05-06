@@ -1,7 +1,7 @@
 """PyTorch BiLSTM classifier for GuardChat Task 1.
 
-Direct port of the stacked Bidirectional-LSTM architecture from the
-reference Colab notebook (vendors/BiLSTM/sentiment_analysis.py):
+PyTorch port of a stacked Bidirectional-LSTM architecture
+(originally a Keras-based sentiment classifier):
 
     Embedding(input_dim, 100)
     -> Bidirectional(LSTM(128, return_sequences=True)) + L2 reg
@@ -11,9 +11,9 @@ reference Colab notebook (vendors/BiLSTM/sentiment_analysis.py):
     -> Dense(64, ReLU) + Dropout(0.5)
     -> Dense(num_classes)
 
-Two adaptations versus the reference notebook:
+Two adaptations versus the reference design:
 
-1. The notebook used a single-label softmax over four sentiment
+1. The original used a single-label softmax over four sentiment
    classes. GuardChat Task 1 is multi-label over six NSFW categories,
    so the final layer outputs 6 logits and the loss is BCEWithLogits.
 

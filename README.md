@@ -23,7 +23,7 @@ aggregator can compose Tables 1 and 2 of the paper.
 
 | Baseline | Type | Folder | Notes |
 |----------|------|--------|-------|
-| BiLSTM | supervised | `src/BiLSTM/` | PyTorch port of `vendors/BiLSTM/sentiment_analysis.py`, 6-way sigmoid head |
+| BiLSTM | supervised | `src/BiLSTM/` | PyTorch port of a stacked Bidirectional-LSTM, 6-way sigmoid head |
 | BERT | supervised | `src/BERT/` | `bert-base-uncased` + multi-label head (`problem_type="multi_label_classification"`) |
 | SafeGuider | supervised | `src/SafeGuider/` | CLIP-EOS embedding + 3-layer MLP, multi-label sigmoid |
 | Llama-Guard 3 | zero-shot | `src/LlamaGuard/` | `meta-llama/Llama-Guard-3-8B`, native S1–S14 taxonomy mapped to GuardChat 6 |
@@ -65,10 +65,12 @@ order, `GuardChatSample`, all metrics, the rewrite prompt).
 │   ├── Qwen/                  ← Task 1 zero-shot (Qwen2.5-7B-Instruct)
 │   ├── Llama/                 ← Task 2 zero-shot (Llama-3.1-8B-Instruct)
 │   └── Gemini/                ← Task 2 API (Gemini 2.5 Flash)
-└── vendors/                   ← upstream reference code (SafeGuider, BiLSTM, BERT)
-    ├── SafeGuider/
-    ├── BiLSTM/
-    └── BERT/
+└── vendors/
+    └── SafeGuider/             ← upstream SafeGuider modules used at runtime
+        ├── classifier.py       ← ThreeLayerClassifier (binary head, Task 2)
+        ├── encoder.py          ← CLIPEncoder (CLIP text encoder + EOS embedding)
+        ├── beam_search.py      ← SafetyAwareBeamSearch
+        └── weights/            ← SD1.4_safeguider.pt + cached CLIP snapshot
 ```
 
 Each baseline package has the same shape:
@@ -464,28 +466,3 @@ the respective README:
 * `src/Llama/README.md`
 * `src/Gemini/README.md`
 * `scripts/README.md` — bash entry points
-
----
-
-## 12. Citation
-
-If you use this code, please cite the paper:
-
-```bibtex
-@inproceedings{guardchat2026,
-  title  = {GuardChat: Benchmarking Multi-Turn Jailbreak Attacks in T2I Systems},
-  author = {Tran, Ngoc-Dai and Huynh, Thanh-Tuong and Le, Trung-Nghia},
-  booktitle = {NeurIPS 2026 Datasets and Benchmarks Track},
-  year   = {2026}
-}
-```
-
----
-
-## 13. License
-
-See `LICENSE`.
-
-The vendored upstream code (`vendors/`) carries its own licence.
-GuardChat itself is released for **research use only**. Do not use the
-released adversarial prompts to attack production T2I systems.

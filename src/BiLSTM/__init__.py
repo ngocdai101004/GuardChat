@@ -1,10 +1,11 @@
 """BiLSTM baseline for GuardChat Task 1 (multi-label unsafe text recognition).
 
-Architecture is a PyTorch port of the stacked Bidirectional-LSTM in
-``vendors/BiLSTM/sentiment_analysis.py``, adapted for the six-category
-multi-label setting. Output schemas, metrics, and the
-``RecognitionPipeline`` API mirror :mod:`src.SafeGuider` so that
-benchmarks can swap baselines without changing the surrounding code.
+Architecture is a PyTorch port of a stacked Bidirectional-LSTM
+classifier (originally implemented as a Keras Colab notebook for
+sentiment analysis), adapted for the six-category multi-label setting.
+Output schemas, metrics, and the ``RecognitionPipeline`` API mirror
+:mod:`src.SafeGuider` so that benchmarks can swap baselines without
+changing the surrounding code.
 """
 
 from .model import BiLSTMClassifier, BiLSTMConfig

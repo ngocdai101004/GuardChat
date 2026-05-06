@@ -1,7 +1,7 @@
 # BiLSTM - Task 1 (Multi-Label Unsafe Text Recognition) on GuardChat.
 #
-# Architecture is a PyTorch port of vendors/BiLSTM/sentiment_analysis.py
-# with the final layer swapped from softmax-4 to sigmoid-6. Optimisation
+# Architecture is a PyTorch port of a stacked Bidirectional-LSTM
+# with the final layer swapped to a 6-way sigmoid head. Optimisation
 # follows Section 6.1 of the paper (AdamW, lr=2e-5, batch 32, 10 epochs).
 
 data:
