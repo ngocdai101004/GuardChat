@@ -1,22 +1,22 @@
 """
 Safety-aware beam search rewriter.
 
-Khi recognizer phán prompt là UNSAFE, module này tìm 1 prompt đã chỉnh sửa
-(bằng cách XÓA TỪ trong prompt gốc, không thay/insert) sao cho:
+When the recognizer judges a prompt to be UNSAFE, this module searches for a revised prompt 
+(by DELETING WORDS from the original prompt, not replacing/inserting) such that:
 
     1. safety_score (P[class=safe]) >= safety_threshold (default 0.80)
-    2. cosine similarity giữa EOS embedding mới vs gốc >= similarity_floor (default 0.1)
-    3. (tie-break) số từ bị xóa càng ít càng tốt
+    2. cosine similarity between the new EOS embedding and the original >= similarity_floor (default 0.1)
+    3. (tie-break) as few words removed as possible
 
-Pseudo-code (xem chi tiết ở `transfer.md` §1.3):
+Pseudo-code (see details in `transfer.md` §1.3):
 
-    1) Rank từng từ theo "đóng góp vào unsafe" (xóa 1 từ → safety tăng nhiều nhất).
-    2) Beam search depth max_depth, mỗi bước thử thêm 1 token để xóa.
-    3) Early stop khi tìm được candidate thỏa cả 2 ngưỡng.
-    4) Fallback: nếu không có candidate thỏa, lấy candidate có safety cao nhất
-       trong các candidate có similarity >= similarity_floor.
+    1) Rank each word by "contribution to unsafe" (deleting one word → maximally increases safety).
+    2) Perform beam search up to max_depth, at each step deleting one more token.
+    3) Early stop if a candidate meeting both thresholds is found.
+    4) Fallback: If no suitable candidate, select candidate with the highest safety
+       among those with similarity >= similarity_floor.
 
-Module thuần — không phụ thuộc Stable Diffusion / LDM.
+This module is standalone — does not depend on Stable Diffusion / LDM.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ import torch
 from encoder import CLIPEncoder
 
 
-# Mặc định khớp với bản trong `stable-diffusion-1.4/scripts/safeguider_gene.py`.
+# Default settings adapted to match `stable-diffusion-1.4/scripts/safeguider_gene.py`.
 DEFAULT_BEAM_WIDTH: int = 6
 DEFAULT_MAX_DEPTH: int = 25
 DEFAULT_SAFETY_THRESHOLD: float = 0.80
@@ -45,7 +45,7 @@ class BeamSearchResult:
     modified_safety: float
     similarity: float
     removed_tokens: List[str] = field(default_factory=list)
-    # Trace dùng để debug/log; không bắt buộc đọc.
+    # Trace used for debug/logging; not required for normal usage.
     log: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -61,7 +61,7 @@ class BeamSearchResult:
 
 
 class SafetyAwareBeamSearch:
-    """Rewriter dùng beam search trên đơn vị từ (whitespace split)."""
+    """Rewriter using beam search at the word (whitespace split) level."""
 
     def __init__(
         self,
@@ -87,24 +87,26 @@ class SafetyAwareBeamSearch:
 
     @torch.no_grad()
     def rewrite(self, prompt: str) -> BeamSearchResult:
-        """Rewrite 1 prompt UNSAFE → 1 prompt mới an toàn (hoặc gốc nếu không tìm được)."""
+        """
+        Rewrite an UNSAFE prompt to a new safe prompt (or return the original if no solution found).
+        """
         words: List[str] = prompt.split()
         log: List[str] = []
 
-        # Embedding & safety của prompt gốc
+        # Embedding & safety of the original prompt
         orig_eos = self.encoder.eos_embedding([prompt])           # (1, D)
         orig_safety = self._safety_score(orig_eos)                # float in [0, 1]
         log.append(f"original safety: {orig_safety:.4f}")
 
         if len(words) <= 1:
-            log.append("Prompt chỉ có 1 từ, không thể beam search.")
+            log.append("Prompt contains only 1 word, beam search is not possible.")
             return BeamSearchResult(
                 original_prompt=prompt, modified_prompt=prompt, was_modified=False,
                 original_safety=orig_safety, modified_safety=orig_safety,
                 similarity=1.0, removed_tokens=[], log=log,
             )
 
-        # 1) Ranking impact: xóa từng từ độc lập, đo safety improvement
+        # 1) Ranking impact: delete each word independently; measure safety improvement
         token_impacts: List[Tuple[int, float]] = []
         for idx in range(len(words)):
             modified = " ".join(words[:idx] + words[idx + 1:])
@@ -118,7 +120,7 @@ class SafetyAwareBeamSearch:
 
         # 2) Beam search
         max_depth = min(self.max_depth, len(words) - 1)
-        # Mỗi candidate: (removed_indices: List[int], improvement: float, similarity: float)
+        # Each candidate: (removed_indices: List[int], improvement: float, similarity: float)
         candidates: List[Tuple[List[int], float, float]] = [([], 0.0, 1.0)]
 
         best_modified_prompt: Optional[str] = None
@@ -177,7 +179,7 @@ class SafetyAwareBeamSearch:
 
             # Early stopping
             if best_modified_prompt is not None and (best_safety_improvement + orig_safety) >= self.safety_threshold:
-                log.append("early stop: tìm được satisfactory solution.")
+                log.append("early stop: found satisfactory solution.")
                 break
 
         # 3) Final selection
@@ -195,7 +197,7 @@ class SafetyAwareBeamSearch:
                 log=log,
             )
 
-        # Fallback: candidate có safety cao nhất với sim >= similarity_floor
+        # Fallback: candidate with highest safety and sim >= similarity_floor
         valid = [c for c in all_seen if c[2] >= self.similarity_floor]
         if valid:
             best_candidate = max(valid, key=lambda x: x[3])
@@ -214,7 +216,7 @@ class SafetyAwareBeamSearch:
                 log=log,
             )
 
-        log.append("không tìm được candidate thỏa similarity_floor — giữ prompt gốc.")
+        log.append("no candidate found satisfying similarity_floor — keep the original prompt.")
         return BeamSearchResult(
             original_prompt=prompt, modified_prompt=prompt, was_modified=False,
             original_safety=orig_safety, modified_safety=orig_safety,
@@ -225,11 +227,12 @@ class SafetyAwareBeamSearch:
 
     @torch.no_grad()
     def _safety_score(self, eos_emb: torch.Tensor) -> float:
-        """Trả về P[class=safe] (scalar) từ EOS embedding (1, D)."""
-        # Một số .pt được lưu với forward expect (B, D). Một số file gốc của
-        # SafeGuider lại unsqueeze thành (B, 1, D) (xem `safeguider_gene.py`
-        # `compute_safety_score`). Chúng ta dùng (B, D) cho gọn — kết quả
-        # không đổi vì layer Linear áp dụng theo last dim.
+        """
+        Return P[class=safe] (scalar) given EOS embedding (1, D).
+        """
+        # Some .pt files expect forward (B, D). Some official SafeGuider files unsqueeze to (B, 1, D)
+        # (see `safeguider_gene.py`'s `compute_safety_score`). We use (B, D) for simplicity—
+        # result is unchanged because Linear layer applies over last dim.
         _, probs = self.classifier(eos_emb)
         if probs.dim() == 3:
             probs = probs.squeeze(1)

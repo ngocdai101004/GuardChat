@@ -1,17 +1,17 @@
 """
-MLP architectures dùng làm safety classifier cho SafeGuider input guard.
+MLP architectures for use as safety classifiers in the SafeGuider input guard.
 
-Recognizer mặc định (ThreeLayerClassifier) là kiến trúc đã được train sẵn
-trong các file weight `Models/SD1.4_safeguider.pt`, `SD2.1_safeguider.pt`,
-`Flux_safeguider.pt` của repo gốc. Tham số `dim` phải khớp với hidden size
-của text encoder:
+The default recognizer (ThreeLayerClassifier) is the architecture pre-trained and
+provided in the weight files: `Models/SD1.4_safeguider.pt`, `SD2.1_safeguider.pt`,
+and `Flux_safeguider.pt` from the original repo. The `dim` argument must match
+the hidden size of the text encoder:
 
     - SD-V1.4 (CLIP ViT-L/14):       dim = 768
     - SD-V2.1 (OpenCLIP ViT-H/14):   dim = 1024
     - Flux.1  (T5-XXL):              dim = 4096
 
-Các biến thể 1/5/7/9 layer ở dưới chỉ phục vụ ablation khi muốn tự train
-classifier mới — KHÔNG load được trực tiếp từ các checkpoint đính kèm repo.
+The 1/5/7/9-layer variants below are intended only for ablation or custom training
+and CANNOT be loaded directly from the checkpoints provided by the repo.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ class OneLayerClassifier(nn.Module):
 
 
 class ThreeLayerClassifier(nn.Module):
-    """Kiến trúc dùng cho mọi `.pt` đính kèm repo gốc."""
+    """Architecture used for all `.pt` checkpoints provided in the original repo."""
 
     def __init__(self, dim: int):
         super().__init__()
