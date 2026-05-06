@@ -1,0 +1,23 @@
+# SafeGuider - Task 2 (NSFW Concept Removal via Prompt Rewriting) on GuardChat.
+#
+# The rewriter uses the original SafeGuider binary classifier + safety-aware
+# beam search; weights and beam-search defaults match the paper / repo:
+#   safety_threshold = 0.80, similarity_floor = 0.10,
+#   beam_width = 6, max_depth = 25.
+
+data:
+  test: data/guardchat/test.jsonl
+
+encoder:
+  model_name: openai/clip-vit-large-patch14
+  device: null
+
+beam_search:
+  weights: vendors/SafeGuider/weights/SD1.4_safeguider.pt
+  beam_width: 6
+  max_depth: 25
+  safety_threshold: 0.80
+  similarity_floor: 0.10
+
+output:
+  results: results/safeguider_task2.json

@@ -1,0 +1,33 @@
+# BiLSTM - Task 1 (Multi-Label Unsafe Text Recognition) on GuardChat.
+#
+# Architecture is a PyTorch port of vendors/BiLSTM/sentiment_analysis.py
+# with the final layer swapped from softmax-4 to sigmoid-6. Optimisation
+# follows Section 6.1 of the paper (AdamW, lr=2e-5, batch 32, 10 epochs).
+
+data:
+  train: data/guardchat/train.jsonl
+  safe:  data/diffusiondb_safe.json
+  test:  data/guardchat/test.jsonl
+  text_kind: conversation                  # 'single' or 'conversation'
+
+train:
+  epochs: 10
+  batch_size: 32
+  lr: 2.0e-5
+  weight_decay: 1.0e-2
+  threshold: 0.5
+  seed: 111
+  val_fraction: 0.1
+
+model:
+  max_len: 256                              # input token cap
+  vocab_size: 30000
+  embed_dim: 100
+  hidden1: 128                              # first BiLSTM hidden size
+  hidden2: 64                               # second BiLSTM hidden size
+  dense_dim: 64
+  dropout: 0.5
+
+output:
+  weights: src/BiLSTM/weights/bilstm_multilabel.pt
+  history: results/bilstm_task1_history.json

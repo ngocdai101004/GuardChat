@@ -1,0 +1,30 @@
+# SafeGuider - Task 1 (Multi-Label Unsafe Text Recognition) on GuardChat.
+#
+# Hyperparameters mirror Section 6.1 of the paper:
+#   "BiLSTM, BERT, and SafeGuider's ANN were trained on 14,000 samples
+#    (9,000 harmful conversational samples from GuardChat and 5,000 safe
+#    prompts from DiffusionDB) using AdamW (lr=2e-5, batch size 32,
+#    weight decay 0.01) for 10 epochs."
+
+data:
+  train: data/guardchat/train.jsonl       # 9,000 GuardChat training samples
+  safe:  data/diffusiondb_safe.json       # 5,000 benign prompts (label = 0)
+  test:  data/guardchat/test.jsonl        # 1,000 oracle-verified test samples
+  text_kind: conversation                  # 'single' or 'conversation'
+
+encoder:
+  model_name: openai/clip-vit-large-patch14
+  device: null                             # null = auto
+
+train:
+  epochs: 10
+  batch_size: 32
+  lr: 2.0e-5
+  weight_decay: 1.0e-2
+  threshold: 0.5
+  seed: 111
+  val_fraction: 0.1
+
+output:
+  weights: src/SafeGuider/weights/recognition_multilabel.pt
+  history: results/safeguider_task1_history.json
