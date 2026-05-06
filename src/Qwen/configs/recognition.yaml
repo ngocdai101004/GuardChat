@@ -1,0 +1,28 @@
+# Qwen - Task 1 (Zero-Shot Multi-Label Unsafe Text Recognition).
+#
+# Qwen/Qwen2.5-7B-Instruct loaded from a local snapshot under weights/.
+# There is no training - this is a pure inference baseline configured
+# entirely by the system prompt in src/Qwen/prompts.py.
+#
+# Library versions (tested):
+#   torch              >= 2.1
+#   transformers       >= 4.43        (matches LlamaGuard runtime baseline)
+#   accelerate         >= 0.26
+#   huggingface_hub    >= 0.20        (snapshot_download)
+#   bitsandbytes       >= 0.43        (only for dtype: int8 / nf4)
+
+data:
+  test: data/guardchat/test.jsonl
+  text_kind: both                     # 'single' | 'conversation' | 'both'
+
+model:
+  weights: src/Qwen/weights/Qwen2.5-7B-Instruct
+  dtype: bfloat16                     # bfloat16 | float16 | float32 | int8 | nf4
+  device: null                        # null = device_map='auto'
+
+generation:
+  max_new_tokens: 64                  # 6-key JSON object fits comfortably
+  do_sample: false                    # greedy decoding for deterministic output
+
+output:
+  results: results/qwen_task1.json

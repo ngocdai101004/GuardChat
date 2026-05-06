@@ -10,8 +10,6 @@ Original file is located at
 from google.colab import drive
 drive.mount('/content/drive')
 
-!pip install torchtext==0.16.0
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
