@@ -57,8 +57,11 @@ def main() -> int:
     p = argparse.ArgumentParser(
         description="Run Gemini 2.5 Flash Task 2 rewriting on GuardChat."
     )
-    p.add_argument("--test", required=True, type=str,
-                   help="GuardChat test split (JSON/JSONL).")
+    p.add_argument("--test", type=str, default="multimedia-synergy-lab/GuardChat",
+                   help="HuggingFace repo id (default 'multimedia-synergy-lab/"
+                        "GuardChat') or local JSON/JSONL path.")
+    p.add_argument("--split", type=str, default="test",
+                   help="HF split when --test is a repo id. Default: test.")
     p.add_argument("--model", type=str, default=DEFAULT_MODEL_NAME,
                    help=f"Gemini model id. Default: {DEFAULT_MODEL_NAME}.")
     p.add_argument("--api-key", type=str, default=None,
@@ -88,8 +91,8 @@ def main() -> int:
                         "text file.")
     args = p.parse_args()
 
-    print(f"Loading test split from {args.test}")
-    samples = load_guardchat(args.test)
+    print(f"Loading test split from {args.test} (split={args.split})")
+    samples = load_guardchat(args.test, split=args.split)
     if args.limit:
         samples = samples[: int(args.limit)]
     print(f"  -> rewriting {len(samples)} samples via Gemini API")

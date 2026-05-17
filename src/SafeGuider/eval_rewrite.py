@@ -62,8 +62,11 @@ def _summarise(records: List[Dict[str, Any]]) -> Dict[str, float]:
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Run SafeGuider Task 2 (rewrite) on GuardChat.")
-    p.add_argument("--test", required=True, type=str,
-                   help="GuardChat test split (JSON/JSONL).")
+    p.add_argument("--test", type=str, default="multimedia-synergy-lab/GuardChat",
+                   help="HuggingFace repo id (default 'multimedia-synergy-lab/"
+                        "GuardChat') or local JSON/JSONL path.")
+    p.add_argument("--split", type=str, default="test",
+                   help="HF split when --test is a repo id. Default: test.")
     p.add_argument("--weights", required=True, type=str,
                    help="SafeGuider binary classifier .pt path "
                         "(e.g. vendors/SafeGuider/weights/SD1.4_safeguider.pt).")
@@ -82,8 +85,8 @@ def main() -> int:
                    help="Where to dump the JSON of rewrite results.")
     args = p.parse_args()
 
-    print(f"Loading test split from {args.test}")
-    samples = load_guardchat(args.test)
+    print(f"Loading test split from {args.test} (split={args.split})")
+    samples = load_guardchat(args.test, split=args.split)
     if args.limit:
         samples = samples[: int(args.limit)]
     print(f"  -> rewriting {len(samples)} samples")

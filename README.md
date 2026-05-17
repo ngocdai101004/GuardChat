@@ -127,36 +127,66 @@ before the gated downloads succeed.
 
 ### 3.3. Data
 
-Place the GuardChat splits and the DiffusionDB safe prompts under
-`./data/` (override with `DATA_DIR=...`):
+GuardChat is hosted on HuggingFace at
+[`multimedia-synergy-lab/GuardChat`](https://huggingface.co/datasets/multimedia-synergy-lab/GuardChat).
+The loader pulls from there by default — **no manual download required**.
+Three splits are available:
 
-```
-data/
-├── guardchat/
-│   ├── train.jsonl        ← 9,000 GuardChat training samples
-│   └── test.jsonl         ← 1,000 oracle-verified test samples
-└── diffusiondb_safe.json  ← 5,000 benign prompts (label = 0) for Task-1 training
-```
+| Split | Size | Purpose |
+|-------|------|---------|
+| `train` | 9,000 | Task-1 supervised training (BiLSTM, BERT, SafeGuider) |
+| `test` | 1,000 | Task-1 / Task-2 evaluation (oracle-verified) |
+| `full` | 10,000 | Combined; useful for analysis / stats |
 
-Each GuardChat record is a dict with at least:
+Each record carries:
 
 ```jsonc
 {
-  "id": "0001",
-  "enhanced_prompt": "...",
+  "id": 1,
+  "category": "sexual",                  // single string (one of 6 canonical names)
+  "prompt": "...",                        // enhanced toxic prompt
+  "raw_prompt": "...",                    // original prompt before enhancement
+  "source": "I2P",
+  "conversation_generator": "Gemma-4-31B",
   "conversation": [
     {"turn_id": 1, "role": "user", "content": "..."},
     ...
   ],
-  "labels": ["sexual", "violence"],   // OR a 6-dim 0/1 label_vector
-  "source": "I2P"                      // optional
+  "conversation_text": "user: ...\nuser: ..."
 }
 ```
 
-`src.utils.load_guardchat` accepts:
-- `.json` list, `.json` `{"data": [...]}`, or `.jsonl` (one record per line)
-- `labels` as list of names, dict (`{"sexual": 1, ...}`), or 6-dim vector
-- snake_case / underscore aliases (`self_harm`, `nudity`, ...)
+`src.utils.load_guardchat` is the single entry point for both backends:
+
+```python
+from src.utils import load_guardchat
+
+# Default: pull `test` split from HuggingFace.
+samples = load_guardchat()
+
+# Explicit split:
+samples = load_guardchat("multimedia-synergy-lab/GuardChat", split="train")
+
+# Local file (JSON / JSONL / {"data": [...]}):
+samples = load_guardchat("./data/guardchat/test.jsonl")
+```
+
+The loader normalises `category` (single string) into a one-hot 6-dim
+`label_vector`. Older or local files using `labels` (list) /
+`label_vector` (vector) / `{"sexual": 1, ...}` (dict) all work too.
+
+**DiffusionDB safe prompts** (5,000 benign prompts mixed in for Task-1
+training) are not on HF in our release — supply a local JSON list at
+`./data/diffusiondb_safe.json` (override with `DIFFUSIONDB_SAFE=...`):
+
+```jsonc
+[ {"prompt": "a serene mountain landscape"},
+  {"prompt": "a cute corgi puppy"},
+  ... ]
+```
+
+Training proceeds without these if the file is missing — just expect
+weaker safe-side recall.
 
 ### 3.4. Weights
 
@@ -169,6 +199,10 @@ bash scripts/download_weights.sh
 # subset
 bash scripts/download_weights.sh llamaguard qwen
 ```
+
+This step does **not** download the GuardChat dataset — that happens
+lazily inside the eval / train CLIs via
+`datasets.load_dataset("multimedia-synergy-lab/GuardChat", split=...)`.
 
 Disk footprint:
 
@@ -219,15 +253,22 @@ Outputs:
 
 Per-epoch metrics are written to `${RESULTS_DIR}/<baseline>_train_history.json`.
 
-The five-baseline Python CLIs are still callable directly:
+The Python CLIs are still callable directly. By default `--train` is
+the HuggingFace repo id; pass a local path to override:
 
 ```bash
+# HF default
 python -m src.SafeGuider.train_recognition \
-    --train data/guardchat/train.jsonl \
     --safe  data/diffusiondb_safe.json \
     --output src/SafeGuider/weights/recognition_multilabel.pt \
     --text-kind conversation \
     --epochs 10 --batch-size 32 --lr 2e-5 --weight-decay 1e-2
+
+# Local file
+python -m src.SafeGuider.train_recognition \
+    --train  data/guardchat/train.jsonl \
+    --safe   data/diffusiondb_safe.json \
+    --output src/SafeGuider/weights/recognition_multilabel.pt
 ```
 
 (See `src/<baseline>/README.md` for the full flag list.)
@@ -395,6 +436,7 @@ torch              >= 2.1
 transformers       >= 4.43         (Llama 3.1 / Qwen2 / multi-label HF)
 accelerate         >= 0.26
 huggingface_hub    >= 0.20
+datasets           >= 2.18         (load multimedia-synergy-lab/GuardChat)
 safetensors        >= 0.4.2
 numpy              >= 1.23
 tqdm               >= 4.60

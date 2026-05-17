@@ -2,31 +2,40 @@
 
 GuardChat samples couple an enhanced toxic prompt with a 6--10 turn
 adversarial conversation and a multi-label vector over six NSFW
-categories. This module normalises a few common on-disk formats into a
-single :class:`GuardChatSample` representation that the recognition and
-rewriting pipelines can both consume.
+categories. This module normalises several on-disk and HuggingFace
+formats into a single :class:`GuardChatSample` representation that the
+recognition and rewriting pipelines can both consume.
 
-Supported input formats
------------------------
+Supported sources
+-----------------
 
-* A JSON file containing a list of samples.
-* A JSONL file containing one sample per line.
-* A JSON dict ``{"data": [...]}``.
+* HuggingFace dataset id (recommended). The official GuardChat release
+  lives at ``multimedia-synergy-lab/GuardChat`` with three splits
+  ``train`` / ``test`` / ``full``. The :func:`load_guardchat` function
+  dispatches to ``datasets.load_dataset`` automatically when ``source``
+  is not a local file path.
+* Local JSON file containing a list of samples or
+  ``{"data": [...]}``.
+* Local JSONL file containing one sample per line.
 
-Each sample is expected to expose at least one of:
+Each record is expected to expose at least one of these prompt fields
+(checked in order): ``enhanced_prompt``, ``prompt``, ``rewritten_prompt``,
+``text``. The multi-turn dialogue lives under ``conversation`` (or
+``turns``) as a list of ``{turn_id, role, content}`` dicts.
 
-* ``enhanced_prompt`` (str) - target single-turn prompt for Task 1/2.
-* ``conversation`` (list of turn dicts with ``role`` + ``content``) - the
-  multi-turn dialogue for Task 1.
+Label annotations are accepted in any of the following shapes; the
+loader normalises them to a canonical 6-dim 0/1 vector:
 
-Multi-label annotations may appear as either:
-
-* ``labels``: list of category strings, e.g. ``["sexual", "violence"]``.
-* ``label_vector``: list of 6 ints in canonical order.
-* a dict mapping each category to 0/1.
+* ``label_vector``: list of 6 ints in canonical order
+  (:data:`CATEGORIES`).
+* ``labels`` / ``categories``: list of category strings, e.g.
+  ``["sexual", "violence"]``.
+* ``label_vector`` as ``{"sexual": 1, "violence": 1, ...}`` dict.
+* ``category``: a single string label (one-hot expansion). This is the
+  shape used by the HF ``multimedia-synergy-lab/GuardChat`` release.
 
 Safe prompts (used as negative samples when training the recognition
-head) are loaded by :func:`load_safe_prompts` from a JSON list of
+head) are loaded by :func:`load_safe_prompts` from a local JSON list of
 strings or ``{"prompt": ...}`` dicts and assigned an all-zero label
 vector.
 """
@@ -53,6 +62,11 @@ CATEGORIES: Tuple[str, ...] = (
 NUM_CATEGORIES: int = len(CATEGORIES)
 
 _CATEGORY_INDEX: Dict[str, int] = {c: i for i, c in enumerate(CATEGORIES)}
+
+# Default HuggingFace dataset repo id for the GuardChat release. Used
+# whenever ``load_guardchat`` is called without a local path.
+DEFAULT_HF_REPO: str = "multimedia-synergy-lab/GuardChat"
+DEFAULT_HF_SPLIT: str = "test"
 
 # Common spelling variants that may appear in source datasets — mapped
 # back to the canonical names. See Appendix A (label normalisation).
@@ -245,15 +259,84 @@ def _record_to_sample(rec: Dict[str, Any], idx: int) -> GuardChatSample:
     )
 
 
-def load_guardchat(path: str) -> List[GuardChatSample]:
-    """Load a GuardChat split from a JSON/JSONL file."""
-    if not os.path.isfile(path):
-        raise FileNotFoundError(f"GuardChat file not found: {path!r}")
+def load_guardchat(
+    source: str = DEFAULT_HF_REPO,
+    split: Optional[str] = None,
+) -> List[GuardChatSample]:
+    """Load a GuardChat split from a local file or from HuggingFace.
+
+    Parameters
+    ----------
+    source : str
+        Either a local file path (``.json`` / ``.jsonl``) or a HuggingFace
+        dataset repo id (e.g. ``"multimedia-synergy-lab/GuardChat"``).
+        Default: :data:`DEFAULT_HF_REPO`.
+    split : str, optional
+        HuggingFace split name when ``source`` is a repo id (one of
+        ``"train"`` / ``"test"`` / ``"full"`` for the official release).
+        Default: :data:`DEFAULT_HF_SPLIT` (``"test"``). Ignored when
+        ``source`` points at a local file.
+
+    Returns
+    -------
+    list[GuardChatSample]
+    """
+    if os.path.isfile(source):
+        return _load_from_file(source)
+    return _load_from_hf(source, split or DEFAULT_HF_SPLIT)
+
+
+def _load_from_file(path: str) -> List[GuardChatSample]:
     samples: List[GuardChatSample] = []
     for i, rec in enumerate(_iter_json_records(path)):
         samples.append(_record_to_sample(rec, i))
     if not samples:
         raise ValueError(f"{path}: no samples found.")
+    return samples
+
+
+def _load_from_hf(repo_id: str, split: str) -> List[GuardChatSample]:
+    """Load a GuardChat split from HuggingFace via ``datasets.load_dataset``.
+
+    Resolves any ``ClassLabel`` columns (``category``, ``source``,
+    ``conversation_generator``) back to their string names before
+    handing rows to :func:`_record_to_sample`, so the existing label
+    normalisation path applies unchanged.
+    """
+    try:
+        from datasets import load_dataset
+    except ImportError as e:
+        raise RuntimeError(
+            "Loading GuardChat from HuggingFace needs the `datasets` "
+            "package. Install it with `pip install datasets>=2.18`, or "
+            "pass a local file path instead of the repo id "
+            f"({repo_id!r})."
+        ) from e
+
+    ds = load_dataset(repo_id, split=split)
+
+    # Identify ClassLabel columns (they round-trip as int codes through
+    # the Arrow backend) so we can convert them back to names.
+    classlabel_fields: List[str] = []
+    for fname, feat in ds.features.items():
+        if hasattr(feat, "int2str") and hasattr(feat, "names"):
+            classlabel_fields.append(fname)
+
+    samples: List[GuardChatSample] = []
+    for i, row in enumerate(ds):
+        rec = dict(row)
+        for fname in classlabel_fields:
+            v = rec.get(fname)
+            if isinstance(v, int):
+                try:
+                    rec[fname] = ds.features[fname].int2str(v)
+                except Exception:
+                    pass  # leave as-is on any conversion hiccup
+        samples.append(_record_to_sample(rec, i))
+    if not samples:
+        raise ValueError(
+            f"HuggingFace dataset {repo_id!r} (split={split!r}) is empty."
+        )
     return samples
 
 

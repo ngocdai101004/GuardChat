@@ -13,14 +13,20 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # ---------------- User-tunable paths ----------------
 
-# Where GuardChat splits + DiffusionDB safe prompts live. Expected layout:
-#   ${DATA_DIR}/guardchat/train.jsonl
-#   ${DATA_DIR}/guardchat/test.jsonl
-#   ${DATA_DIR}/diffusiondb_safe.json
-DATA_DIR="${DATA_DIR:-${REPO_ROOT}/data}"
+# GuardChat data source. By default we pull straight from HuggingFace
+# (`multimedia-synergy-lab/GuardChat`) - no manual download required.
+# Override GUARDCHAT_TRAIN / GUARDCHAT_TEST with a local file path to
+# pin to a specific JSON / JSONL file instead, e.g.:
+#   GUARDCHAT_TEST=/mnt/guardchat/test.jsonl bash scripts/benchmark_task1.sh
+GUARDCHAT_DATASET="${GUARDCHAT_DATASET:-multimedia-synergy-lab/GuardChat}"
+GUARDCHAT_TRAIN="${GUARDCHAT_TRAIN:-${GUARDCHAT_DATASET}}"
+GUARDCHAT_TEST="${GUARDCHAT_TEST:-${GUARDCHAT_DATASET}}"
+GUARDCHAT_TRAIN_SPLIT="${GUARDCHAT_TRAIN_SPLIT:-train}"
+GUARDCHAT_TEST_SPLIT="${GUARDCHAT_TEST_SPLIT:-test}"
 
-GUARDCHAT_TRAIN="${GUARDCHAT_TRAIN:-${DATA_DIR}/guardchat/train.jsonl}"
-GUARDCHAT_TEST="${GUARDCHAT_TEST:-${DATA_DIR}/guardchat/test.jsonl}"
+# Local benign-prompts file used to mix in label-0 samples during Task-1
+# training (DiffusionDB safe). This is a LOCAL path - no HF mirror.
+DATA_DIR="${DATA_DIR:-${REPO_ROOT}/data}"
 DIFFUSIONDB_SAFE="${DIFFUSIONDB_SAFE:-${DATA_DIR}/diffusiondb_safe.json}"
 
 # Where benchmark JSON outputs land.
@@ -72,18 +78,39 @@ run_module() {
 }
 
 # Confirm a path exists; exit non-zero with a helpful message otherwise.
+# Used for local artefacts (model weights, safe prompts).
 require_path() {
     local kind="$1"
     local path="$2"
     if [[ ! -e "${path}" ]]; then
         echo "ERROR: ${kind} not found at ${path}" >&2
-        echo "Hint: edit scripts/env.sh or export ${kind^^} before running." >&2
+        echo "Hint: edit scripts/env.sh or export the variable before running." >&2
         return 1
     fi
 }
 
+# Sanity-check a GuardChat data source. Accepts a local file OR a
+# HuggingFace repo id (string containing "/" but not starting with "/"
+# or "./" and without a file extension).
+require_data() {
+    local kind="$1"
+    local source="$2"
+    if [[ -e "${source}" ]]; then
+        return 0
+    fi
+    # Looks like an HF repo id (e.g. "multimedia-synergy-lab/GuardChat")?
+    if [[ "${source}" == */* ]] && [[ "${source}" != /* ]] && [[ "${source}" != ./* ]] \
+            && [[ "${source}" != *.json && "${source}" != *.jsonl ]]; then
+        return 0
+    fi
+    echo "ERROR: ${kind} not found at ${source}" >&2
+    echo "Hint: pass a local JSON/JSONL path or a HuggingFace repo id." >&2
+    return 1
+}
+
 export REPO_ROOT SCRIPT_DIR DATA_DIR RESULTS_DIR
-export GUARDCHAT_TRAIN GUARDCHAT_TEST DIFFUSIONDB_SAFE
+export GUARDCHAT_DATASET GUARDCHAT_TRAIN GUARDCHAT_TEST DIFFUSIONDB_SAFE
+export GUARDCHAT_TRAIN_SPLIT GUARDCHAT_TEST_SPLIT
 export SAFEGUIDER_RECOG_WEIGHTS SAFEGUIDER_BINARY_WEIGHTS
 export BILSTM_WEIGHTS BERT_WEIGHTS
 export LLAMAGUARD_WEIGHTS QWEN_WEIGHTS LLAMA_WEIGHTS

@@ -11,10 +11,10 @@
 #   AdamW lr=2e-5, weight_decay=0.01, batch 32, 10 epochs.
 #
 # Inputs (override via env):
-#   GUARDCHAT_TRAIN     default: data/guardchat/train.jsonl
-#   DIFFUSIONDB_SAFE    default: data/diffusiondb_safe.json
-#   TEXT_KIND           default: both    (here we use "conversation" since
-#                                         training is on conversational samples)
+#   GUARDCHAT_TRAIN         default: multimedia-synergy-lab/GuardChat (HF)
+#   GUARDCHAT_TRAIN_SPLIT   default: train
+#   DIFFUSIONDB_SAFE        default: data/diffusiondb_safe.json
+#   TEXT_KIND               default: both (training itself uses "conversation")
 # Outputs:
 #   src/BiLSTM/weights/bilstm_multilabel.pt
 #   src/BERT/weights/bert_multilabel/        (HuggingFace save_pretrained dir)
@@ -36,7 +36,7 @@ LR="${LR:-2e-5}"
 WD="${WD:-1e-2}"
 SEED="${SEED:-111}"
 
-require_path "GUARDCHAT_TRAIN" "${GUARDCHAT_TRAIN}"
+require_data "GUARDCHAT_TRAIN" "${GUARDCHAT_TRAIN}"
 if [[ ! -e "${DIFFUSIONDB_SAFE}" ]]; then
     echo "WARNING: ${DIFFUSIONDB_SAFE} not found - training without safe prompts." >&2
     SAFE_FLAG=()
@@ -49,6 +49,7 @@ train_bilstm() {
     mkdir -p "$(dirname "${BILSTM_WEIGHTS}")"
     run_module src.BiLSTM.train_recognition \
         --train "${GUARDCHAT_TRAIN}" \
+        --train-split "${GUARDCHAT_TRAIN_SPLIT}" \
         "${SAFE_FLAG[@]}" \
         --text-kind conversation \
         --epochs "${EPOCHS}" \
@@ -65,6 +66,7 @@ train_bert() {
     mkdir -p "${BERT_WEIGHTS}"
     run_module src.BERT.train_recognition \
         --train "${GUARDCHAT_TRAIN}" \
+        --train-split "${GUARDCHAT_TRAIN_SPLIT}" \
         "${SAFE_FLAG[@]}" \
         --text-kind conversation \
         --epochs "${EPOCHS}" \
@@ -81,6 +83,7 @@ train_safeguider() {
     mkdir -p "$(dirname "${SAFEGUIDER_RECOG_WEIGHTS}")"
     run_module src.SafeGuider.train_recognition \
         --train "${GUARDCHAT_TRAIN}" \
+        --train-split "${GUARDCHAT_TRAIN_SPLIT}" \
         "${SAFE_FLAG[@]}" \
         --text-kind conversation \
         --epochs "${EPOCHS}" \

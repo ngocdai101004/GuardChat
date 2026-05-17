@@ -48,8 +48,13 @@ def _evaluate_one_kind(
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Evaluate SafeGuider Task 1 on GuardChat.")
-    p.add_argument("--test", required=True, type=str,
-                   help="GuardChat test split (JSON/JSONL of verified samples).")
+    p.add_argument("--test", type=str, default="multimedia-synergy-lab/GuardChat",
+                   help="Either a HuggingFace dataset repo id (default: "
+                        "'multimedia-synergy-lab/GuardChat') or a local "
+                        "JSON/JSONL path with verified test samples.")
+    p.add_argument("--split", type=str, default="test",
+                   help="HF split when --test is a repo id (train/test/full). "
+                        "Default: test.")
     p.add_argument("--weights", type=str, default=DEFAULT_WEIGHTS,
                    help="Multi-label classifier .pt path.")
     p.add_argument("--encoder-model", type=str, default="openai/clip-vit-large-patch14")
@@ -63,8 +68,8 @@ def main() -> int:
                    help="Optional JSON file to dump predictions + metrics.")
     args = p.parse_args()
 
-    print(f"Loading test split from {args.test}")
-    samples = load_guardchat(args.test)
+    print(f"Loading test split from {args.test} (split={args.split})")
+    samples = load_guardchat(args.test, split=args.split)
     print(f"  -> {len(samples)} samples")
 
     pipe = RecognitionPipeline.from_pretrained(

@@ -14,6 +14,8 @@ in sync.
 
 from .data import (
     CATEGORIES,
+    DEFAULT_HF_REPO,
+    DEFAULT_HF_SPLIT,
     NUM_CATEGORIES,
     GuardChatSample,
     flatten_conversation,
@@ -41,6 +43,8 @@ from .rewrite_prompt import (
 
 __all__ = [
     "CATEGORIES",
+    "DEFAULT_HF_REPO",
+    "DEFAULT_HF_SPLIT",
     "NUM_CATEGORIES",
     "GuardChatSample",
     "flatten_conversation",

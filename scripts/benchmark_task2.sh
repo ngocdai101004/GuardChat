@@ -12,6 +12,10 @@
 #   gemini      (Gemini 2.5 Flash API, needs GEMINI_API_KEY env var)
 #   all         shorthand for safeguider llama gemini
 #
+# Inputs (override via env):
+#   GUARDCHAT_TEST         default: multimedia-synergy-lab/GuardChat (HF)
+#   GUARDCHAT_TEST_SPLIT   default: test
+#
 # Outputs:
 #   ${RESULTS_DIR}/{safeguider,llama,gemini}_task2.json
 #
@@ -32,7 +36,7 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     TARGETS=(safeguider llama gemini)
 fi
 
-require_path "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
+require_data "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
 
 LLM_DEVICE_FLAG=()
 [[ -n "${DEVICE:-}" ]] && LLM_DEVICE_FLAG=(--device "${DEVICE}")
@@ -42,6 +46,7 @@ eval_safeguider() {
     require_path "SAFEGUIDER_BINARY_WEIGHTS" "${SAFEGUIDER_BINARY_WEIGHTS}"
     run_module src.SafeGuider.eval_rewrite \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${SAFEGUIDER_BINARY_WEIGHTS}" \
         "${LLM_DEVICE_FLAG[@]}" \
         --output "${RESULTS_DIR}/safeguider_task2.json"
@@ -52,6 +57,7 @@ eval_llama() {
     require_path "LLAMA_WEIGHTS" "${LLAMA_WEIGHTS}"
     run_module src.Llama.eval_rewrite \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${LLAMA_WEIGHTS}" \
         --dtype "${DTYPE}" \
         "${LLM_DEVICE_FLAG[@]}" \
@@ -67,6 +73,7 @@ eval_gemini() {
     fi
     run_module src.Gemini.eval_rewrite \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --model "${GEMINI_MODEL:-gemini-2.5-flash}" \
         --output "${RESULTS_DIR}/gemini_task2.json"
 }

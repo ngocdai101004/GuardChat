@@ -62,10 +62,13 @@ Everything else has a sensible default in `env.sh`.
 
 | Env var | Default | What it controls |
 |---------|---------|------------------|
-| `DATA_DIR` | `${REPO_ROOT}/data` | Root data folder |
-| `GUARDCHAT_TRAIN` | `${DATA_DIR}/guardchat/train.jsonl` | Train split |
-| `GUARDCHAT_TEST` | `${DATA_DIR}/guardchat/test.jsonl` | Test split |
-| `DIFFUSIONDB_SAFE` | `${DATA_DIR}/diffusiondb_safe.json` | Safe prompts (label = 0) |
+| `GUARDCHAT_DATASET` | `multimedia-synergy-lab/GuardChat` | HF repo id used by both `GUARDCHAT_TRAIN` and `GUARDCHAT_TEST` defaults |
+| `GUARDCHAT_TRAIN` | `${GUARDCHAT_DATASET}` | Train data source: HF repo id or local JSON/JSONL path |
+| `GUARDCHAT_TEST` | `${GUARDCHAT_DATASET}` | Test data source (same format as train) |
+| `GUARDCHAT_TRAIN_SPLIT` | `train` | HF split when `GUARDCHAT_TRAIN` is a repo id |
+| `GUARDCHAT_TEST_SPLIT` | `test` | HF split when `GUARDCHAT_TEST` is a repo id |
+| `DIFFUSIONDB_SAFE` | `${DATA_DIR}/diffusiondb_safe.json` | Safe prompts (label = 0) — local file only |
+| `DATA_DIR` | `${REPO_ROOT}/data` | Root data folder for local files (DiffusionDB safe) |
 | `RESULTS_DIR` | `${REPO_ROOT}/results` | Where eval JSONs land |
 | `PYTHON` | `python` | Python interpreter (point at venv) |
 | `DTYPE` | `bfloat16` | LLM weight dtype: `bfloat16 / float16 / int8 / nf4` |
@@ -77,3 +80,9 @@ Everything else has a sensible default in `env.sh`.
 | `DEVICE` | unset | Force `cuda` / `cpu` (else `device_map='auto'`) |
 | `LLAMAGUARD_MODE` | `native` | Llama-Guard taxonomy: `native / custom` |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model id |
+
+To pin a local file instead of the HF default, just override:
+
+```bash
+GUARDCHAT_TEST=/mnt/guardchat/test.jsonl bash scripts/benchmark_task1.sh
+```

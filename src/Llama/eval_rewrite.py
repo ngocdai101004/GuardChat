@@ -62,8 +62,11 @@ def main() -> int:
     p = argparse.ArgumentParser(
         description="Run Llama-3.1-8B-Instruct Task 2 rewriting on GuardChat."
     )
-    p.add_argument("--test", required=True, type=str,
-                   help="GuardChat test split (JSON/JSONL).")
+    p.add_argument("--test", type=str, default="multimedia-synergy-lab/GuardChat",
+                   help="HuggingFace repo id (default 'multimedia-synergy-lab/"
+                        "GuardChat') or local JSON/JSONL path.")
+    p.add_argument("--split", type=str, default="test",
+                   help="HF split when --test is a repo id. Default: test.")
     p.add_argument("--weights", type=str, default=DEFAULT_LOCAL_DIR,
                    help="Local snapshot dir (or HF id). "
                         "Default: src/Llama/weights/Llama-3.1-8B-Instruct.")
@@ -84,8 +87,8 @@ def main() -> int:
                         "text file. Useful for prompt-engineering ablations.")
     args = p.parse_args()
 
-    print(f"Loading test split from {args.test}")
-    samples = load_guardchat(args.test)
+    print(f"Loading test split from {args.test} (split={args.split})")
+    samples = load_guardchat(args.test, split=args.split)
     if args.limit:
         samples = samples[: int(args.limit)]
     print(f"  -> rewriting {len(samples)} samples")

@@ -21,9 +21,12 @@ tqdm>=4.60
 # transformers >= 4.43 is required for Llama 3.1 / Llama-Guard-3
 # (used by src/LlamaGuard, src/Llama, src/Qwen, src/BERT, and the
 # CLIP encoder vendored under vendors/SafeGuider/).
+# datasets >= 2.18 is required by src/utils/data.py to fetch the
+# official GuardChat release at multimedia-synergy-lab/GuardChat.
 transformers>=4.43
 accelerate>=0.26
 huggingface_hub>=0.20
+datasets>=2.18
 # `safetensors` is a transitive dep but pinning prevents an annoying
 # "non-contiguous tensor" save error on some BERT backbones (Issue
 # #15123).

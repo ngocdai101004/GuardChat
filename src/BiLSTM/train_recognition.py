@@ -71,13 +71,18 @@ def _split_train_val(
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Train BiLSTM Task 1 (recognition).")
-    p.add_argument("--train", required=True, type=str,
-                   help="GuardChat train split (JSON/JSONL).")
+    p.add_argument("--train", type=str, default="multimedia-synergy-lab/GuardChat",
+                   help="HuggingFace repo id (default 'multimedia-synergy-lab/"
+                        "GuardChat') or local JSON/JSONL path with train samples.")
+    p.add_argument("--train-split", type=str, default="train",
+                   help="HF split when --train is a repo id. Default: train.")
     p.add_argument("--safe", type=str, default=None,
-                   help="Safe prompts (e.g. DiffusionDB) loaded as label-0 samples.")
+                   help="Local JSON of benign prompts loaded as label-0 samples.")
     p.add_argument("--val", type=str, default=None,
-                   help="Optional GuardChat val split. If omitted, --val-fraction "
-                        "of train is held out.")
+                   help="Optional GuardChat val source (HF repo id or local). "
+                        "If omitted, --val-fraction of train is held out.")
+    p.add_argument("--val-split", type=str, default="test",
+                   help="HF split when --val is a repo id. Default: test.")
     p.add_argument("--text-kind", type=str, default="conversation",
                    choices=["single", "conversation"])
     p.add_argument("--device", type=str, default=None, choices=[None, "cuda", "cpu"])
@@ -102,8 +107,8 @@ def main() -> int:
 
     _set_seed(args.seed)
 
-    print(f"Loading train samples from {args.train}")
-    train_samples = list(load_guardchat(args.train))
+    print(f"Loading train samples from {args.train} (split={args.train_split})")
+    train_samples = list(load_guardchat(args.train, split=args.train_split))
     if args.safe:
         print(f"Loading safe prompts from {args.safe}")
         safe = load_safe_prompts(args.safe)
@@ -112,8 +117,8 @@ def main() -> int:
     print(f"Total train samples: {len(train_samples)}")
 
     if args.val:
-        print(f"Loading val samples from {args.val}")
-        val_samples = load_guardchat(args.val)
+        print(f"Loading val samples from {args.val} (split={args.val_split})")
+        val_samples = load_guardchat(args.val, split=args.val_split)
     else:
         train_samples, val_samples = _split_train_val(
             train_samples, args.val_fraction, args.seed,

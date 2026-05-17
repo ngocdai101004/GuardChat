@@ -14,6 +14,11 @@
 #   qwen        (zero-shot, needs Qwen2.5-7B-Instruct local snapshot)
 #   all         shorthand for bilstm bert safeguider llamaguard qwen
 #
+# Inputs (override via env):
+#   GUARDCHAT_TEST         default: multimedia-synergy-lab/GuardChat (HF)
+#   GUARDCHAT_TEST_SPLIT   default: test
+#   TEXT_KIND              default: both (single + conversation)
+#
 # Outputs:
 #   ${RESULTS_DIR}/{bilstm,bert,safeguider,llamaguard,qwen}_task1.json
 #
@@ -30,7 +35,7 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     TARGETS=(bilstm bert safeguider llamaguard qwen)
 fi
 
-require_path "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
+require_data "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
 
 # Optional - some baselines accept extra device / dtype flags via env.
 LLM_DEVICE_FLAG=()
@@ -41,6 +46,7 @@ eval_bilstm() {
     require_path "BILSTM_WEIGHTS" "${BILSTM_WEIGHTS}"
     run_module src.BiLSTM.eval_recognition \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${BILSTM_WEIGHTS}" \
         --text-kind "${TEXT_KIND}" \
         --output "${RESULTS_DIR}/bilstm_task1.json"
@@ -51,6 +57,7 @@ eval_bert() {
     require_path "BERT_WEIGHTS" "${BERT_WEIGHTS}"
     run_module src.BERT.eval_recognition \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${BERT_WEIGHTS}" \
         --text-kind "${TEXT_KIND}" \
         --output "${RESULTS_DIR}/bert_task1.json"
@@ -61,6 +68,7 @@ eval_safeguider() {
     require_path "SAFEGUIDER_RECOG_WEIGHTS" "${SAFEGUIDER_RECOG_WEIGHTS}"
     run_module src.SafeGuider.eval_recognition \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${SAFEGUIDER_RECOG_WEIGHTS}" \
         --text-kind "${TEXT_KIND}" \
         --output "${RESULTS_DIR}/safeguider_task1.json"
@@ -71,6 +79,7 @@ eval_llamaguard() {
     require_path "LLAMAGUARD_WEIGHTS" "${LLAMAGUARD_WEIGHTS}"
     run_module src.LlamaGuard.eval_recognition \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${LLAMAGUARD_WEIGHTS}" \
         --mode "${LLAMAGUARD_MODE:-native}" \
         --dtype "${DTYPE}" \
@@ -84,6 +93,7 @@ eval_qwen() {
     require_path "QWEN_WEIGHTS" "${QWEN_WEIGHTS}"
     run_module src.Qwen.eval_recognition \
         --test "${GUARDCHAT_TEST}" \
+        --split "${GUARDCHAT_TEST_SPLIT}" \
         --weights "${QWEN_WEIGHTS}" \
         --dtype "${DTYPE}" \
         --text-kind "${TEXT_KIND}" \
