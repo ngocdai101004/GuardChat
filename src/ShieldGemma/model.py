@@ -186,7 +186,10 @@ def ensure_local_snapshot(
             "(pip install -r src/ShieldGemma/requirements.txt)."
         ) from e
 
-    os.makedirs(local_dir, exist_ok=True)
+    # realpath, not local_dir: `weights/shieldgemma-2b` is often a symlink
+    # onto a bigger volume, and makedirs(exist_ok=True) still raises
+    # FileExistsError on a symlink whose target does not exist yet.
+    os.makedirs(os.path.realpath(local_dir), exist_ok=True)
     print(f"[ShieldGemma] weights not found in {local_dir}")
     print(f"[ShieldGemma] downloading {repo_id!r} (~5 GB, one time)...")
     snapshot_download(

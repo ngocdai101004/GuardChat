@@ -65,7 +65,9 @@ def main() -> int:
         ) from e
 
     token = resolve_hf_token(args.token)
-    os.makedirs(args.local_dir, exist_ok=True)
+    # realpath: the destination is commonly a symlink onto a larger
+    # volume, and makedirs would raise on a symlink with no target yet.
+    os.makedirs(os.path.realpath(args.local_dir), exist_ok=True)
     print(f"[ShieldGemma] downloading {args.repo_id!r} -> {args.local_dir}")
     print("[ShieldGemma] gated repo: accept the Gemma licence at")
     print(f"              https://huggingface.co/{args.repo_id}")
