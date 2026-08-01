@@ -2,7 +2,7 @@
 # Run Task 1 (Multi-Label Unsafe Text Recognition) benchmark across baselines.
 #
 # Usage:
-#   bash scripts/benchmark_task1.sh                          # all 6 baselines
+#   bash scripts/benchmark_task1.sh                          # all 7 baselines
 #   bash scripts/benchmark_task1.sh bilstm bert              # subset
 #   bash scripts/benchmark_task1.sh llamaguard qwen          # zero-shot only
 #
@@ -13,6 +13,7 @@
 #   llamaguard   (zero-shot, meta-llama/Llama-Guard-3-8B; needs HF_TOKEN)
 #   qwen         (zero-shot, needs Qwen2.5-7B-Instruct local snapshot)
 #   shieldgemma  (zero-shot, google/shieldgemma-2b; needs HF_TOKEN)
+#   qwen3guard   (zero-shot, Qwen/Qwen3Guard-Gen-8B; ungated)
 #   all          shorthand for every target above
 #
 # Inputs (override via env):
@@ -22,8 +23,8 @@
 #
 # Outputs:
 #   ${RESULTS_DIR}/{bilstm,bert,safeguider,qwen}_task1.json
-#   experiment_results/task1/{llamaguard,shieldgemma}/<model>_task1_{prompt,
-#       raw_prompt,conversation}.json   (see the per-model scripts)
+#   experiment_results/task1/{llamaguard,shieldgemma,qwen3guard}/<model>_task1_
+#       {prompt,raw_prompt,conversation}.json   (see the per-model scripts)
 #
 # Each output JSON has:
 #   { "single":       { "metrics": {...}, "predictions": [...] },
@@ -35,7 +36,7 @@ source "$(dirname "$0")/env.sh"
 
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-    TARGETS=(bilstm bert safeguider llamaguard qwen shieldgemma)
+    TARGETS=(bilstm bert safeguider llamaguard qwen shieldgemma qwen3guard)
 fi
 
 require_data "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
@@ -106,6 +107,14 @@ eval_shieldgemma() {
     bash "${SCRIPT_DIR}/benchmark_task1_shieldgemma.sh" all
 }
 
+eval_qwen3guard() {
+    section "Eval Qwen3Guard-Gen-8B (Task 1, zero-shot)"
+    # Delegated: Qwen3Guard writes three files (prompt / raw_prompt /
+    # conversation) under experiment_results/task1/qwen3guard/ rather
+    # than the single ${RESULTS_DIR}/*_task1.json of the other baselines.
+    bash "${SCRIPT_DIR}/benchmark_task1_qwen3guard.sh" all
+}
+
 for tgt in "${TARGETS[@]}"; do
     case "${tgt}" in
         bilstm)      eval_bilstm ;;
@@ -114,6 +123,7 @@ for tgt in "${TARGETS[@]}"; do
         llamaguard)  eval_llamaguard ;;
         qwen)        eval_qwen ;;
         shieldgemma) eval_shieldgemma ;;
+        qwen3guard)  eval_qwen3guard ;;
         all)
             eval_bilstm
             eval_bert
@@ -121,10 +131,11 @@ for tgt in "${TARGETS[@]}"; do
             eval_llamaguard
             eval_qwen
             eval_shieldgemma
+            eval_qwen3guard
             ;;
         *)
             echo "Unknown target: ${tgt}" >&2
-            echo "Choose from: bilstm | bert | safeguider | llamaguard | qwen | shieldgemma | all" >&2
+            echo "Choose from: bilstm | bert | safeguider | llamaguard | qwen | shieldgemma | qwen3guard | all" >&2
             exit 2
             ;;
     esac

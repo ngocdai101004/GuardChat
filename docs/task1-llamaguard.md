@@ -108,15 +108,21 @@ S6=Harassment). Model suy luận zero-shot trên đúng schema của ta, map 1�
 | S-code | GuardChat |
 |---|---|
 | S1 Violent Crimes, S9 Indiscriminate Weapons | violence |
-| S2, S6, S7, S8, S13, S14 | illegal |
+| S2 Non-Violent Crimes, S7 Privacy, S8 IP, S14 Code Interpreter Abuse | illegal |
 | S3 Sex-Related Crimes, S4 CSE, S12 Sexual Content | sexual |
 | S5 Defamation, S10 Hate | harassment |
 | S11 Suicide & Self-Harm | self-harm |
+| S6 Specialized Advice, S13 Elections | *(không map)* |
 | *(không có)* | **shocking → không bao giờ bắn** |
 
 Ở mode này `shocking` luôn F1 = 0 nên Macro-F1 bị chặn trên; CLI in cảnh báo
 `unreachable_categories` để không nhầm với bug. Đây vẫn là con số zero-shot
 trung thực của model "as released" — hợp cho phần thảo luận.
+
+`S6` (lời khuyên y tế / tài chính / pháp lý) và `S13` (bầu cử) **cố ý không
+map**: cả hai đều không mô tả hành vi phạm pháp, ép vào `illegal` là bịa nhãn.
+Mẫu nào chỉ trả về hai code này sẽ ra vector toàn 0 → bị tính là safe; CLI in
+cảnh báo và prediction giữ `unmapped_scodes` để không mất dấu.
 
 `--mode custom` là alias cũ của `guardchat`, vẫn chạy được.
 
@@ -127,15 +133,19 @@ Chi tiết mapping: `src/LlamaGuard/taxonomy.py`.
 Khác ShieldGemma (model một-input), Llama-Guard vốn được thiết kế cho hội
 thoại nhiều lượt. Có 2 lựa chọn (`--conv-format`):
 
-- **`turns` (mặc định)** — đẩy nguyên danh sách turn vào chat template. Model
-  đánh giá lượt cuối trong ngữ cảnh các lượt trước; đúng phân phối huấn
-  luyện của nó, thường là con số mạnh nhất.
-- **`concat`** — gộp toàn bộ hội thoại thành **một** user message, giống cách
-  BiLSTM / BERT / ShieldGemma nhìn $X_{conv}$.
+- **`concat` (mặc định)** — gộp toàn bộ hội thoại thành **một** user message,
+  giống cách BiLSTM / BERT / ShieldGemma nhìn $X_{conv}$. Để bảng Task 1 so
+  sánh cùng một input giữa các dòng.
+- **`turns`** — đẩy nguyên danh sách turn vào chat template.
 
-Nếu bảng Task 1 cần input **đồng nhất tuyệt đối** giữa các dòng thì chạy thêm
-một lượt `--conv-format concat`. Trường `conv_format` được ghi trong `meta`
-của file output nên không lẫn được.
+  ⚠️ Chat template của Llama-Guard **bắt buộc** role xen kẽ
+  user/assistant/user/…, gặp 2 lượt cùng role là ném
+  `jinja2.exceptions.TemplateError`. Hội thoại GuardChat toàn user-side, nên
+  pipeline gộp các lượt cùng role lại trước khi đẩy vào — kết quả là 8 lượt
+  co về 1 message, tức cùng nội dung với `concat`, chỉ thiếu prefix `user: `.
+  Nói cách khác trên bộ dữ liệu này `turns` gần như không khác `concat`.
+
+Trường `conv_format` được ghi trong `meta` của file output nên không lẫn được.
 
 ## 4. Chạy
 
@@ -153,7 +163,7 @@ bash scripts/benchmark_task1_llamaguard.sh prompt raw_prompt
 | `LLAMAGUARD_TEST` | `build_dataset/dataset/final_df_test.json` | file test |
 | `LLAMAGUARD_WEIGHTS` | `src/LlamaGuard/weights/Llama-Guard-3-8B` | thư mục weights (hoặc Hub id) |
 | `LLAMAGUARD_MODE` | `guardchat` | `guardchat` \| `native` |
-| `LLAMAGUARD_CONV_FORMAT` | `turns` | `turns` \| `concat` |
+| `LLAMAGUARD_CONV_FORMAT` | `concat` | `concat` \| `turns` |
 | `LLAMAGUARD_OUT` | `experiment_results/task1/llamaguard` | thư mục output |
 | `DEVICE` | `auto` | `auto` \| `cuda` \| `mps` \| `cpu` |
 | `DTYPE_LG` | `auto` | `auto` \| `bfloat16` \| `float16` \| `float32` \| `int8` \| `nf4` |
@@ -174,7 +184,7 @@ python -m src.LlamaGuard.eval_recognition \
     --weights src/LlamaGuard/weights/Llama-Guard-3-8B \
     --mode guardchat \
     --text-kind all \
-    --conv-format turns \
+    --conv-format concat \
     --device auto --dtype auto \
     --output-dir experiment_results/task1/llamaguard
 ```
@@ -238,7 +248,7 @@ trước để đo.
     "model": "src/LlamaGuard/weights/Llama-Guard-3-8B", "mode": "guardchat",
     "dtype": "bfloat16", "device": "cuda",
     "text_kind": "prompt", "num_samples": 1000,
-    "conv_format": "turns", "role_prefix": true,
+    "conv_format": "concat", "role_prefix": true,
     "unreachable_categories": []
   }
 }

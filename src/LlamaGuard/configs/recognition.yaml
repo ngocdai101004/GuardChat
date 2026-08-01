@@ -16,8 +16,10 @@
 data:
   test: build_dataset/dataset/final_df_test.json
   text_kind: all                      # 'prompt' | 'raw_prompt' | 'conversation' | 'all'
-  conv_format: turns                  # 'turns' = real turn list (native to the model)
-                                      # 'concat' = flattened, like the other baselines
+  conv_format: concat                 # 'concat' = flattened, like the other baselines
+                                      # 'turns'  = real turn list; the template demands
+                                      #            strict user/assistant alternation, so
+                                      #            same-role turns are merged first
   role_prefix: true                   # prefix each concatenated turn with 'user: '
 
 model:

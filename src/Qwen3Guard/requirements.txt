@@ -1,0 +1,41 @@
+# Qwen3Guard-Gen-8B - Task 1 benchmark dependencies.
+#
+# Self-contained: install into a dedicated venv for this experiment only,
+# so it cannot collide with the repo-wide requirements.txt (see
+# docs/task1-qwen3guard.md).
+#
+#   python3 -m venv .venv-qwen3guard
+#   source .venv-qwen3guard/bin/activate
+#   pip install -r src/Qwen3Guard/requirements.txt
+#
+# GPU note: on a CUDA box install the matching torch wheel FIRST, then
+# this file:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r src/Qwen3Guard/requirements.txt
+
+# ---------------- Core ----------------
+# Qwen3Guard is inference-only here: a ~64-token greedy generation per
+# input, no training.
+torch>=2.1
+numpy>=1.23
+tqdm>=4.60
+
+# ---------------- HuggingFace stack ----------------
+# Lower bound 4.51 is the first release with the Qwen3 architecture
+# (`model_type: qwen3`), which Qwen3Guard-Gen-8B is built on - an older
+# transformers fails at load with `KeyError: 'qwen3'`.
+# Upper bound is deliberate: transformers 5.x requires torch >= 2.4,
+# unavailable on macOS x86_64 (PyTorch stopped shipping those wheels
+# after 2.2.2) - installing 5.x there silently disables the PyTorch
+# backend and every model load fails with
+# "AutoModelForCausalLM requires the PyTorch library".
+transformers>=4.51,<5
+accelerate>=0.26
+huggingface_hub>=0.23        # snapshot_download(local_dir=...) writes real files
+safetensors>=0.4.2
+
+# ---------------- Quantisation (optional) ----------------
+# Needed for `--dtype int8` / `--dtype nf4`, which is how the 8B model
+# fits on a <16 GB GPU. CUDA only; macOS users must stay on bfloat16 or
+# float32 and have ~16-32 GB of RAM free.
+bitsandbytes>=0.43; platform_system != "Darwin"

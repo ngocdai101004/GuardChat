@@ -44,6 +44,9 @@ BERT_WEIGHTS="${BERT_WEIGHTS:-${REPO_ROOT}/src/BERT/weights/bert_multilabel}"
 SHIELDGEMMA_WEIGHTS="${SHIELDGEMMA_WEIGHTS:-${REPO_ROOT}/src/ShieldGemma/weights/shieldgemma-2b}"
 
 LLAMAGUARD_WEIGHTS="${LLAMAGUARD_WEIGHTS:-${REPO_ROOT}/src/LlamaGuard/weights/Llama-Guard-3-8B}"
+# Qwen3Guard-Gen-8B (safety judge) - distinct from QWEN_WEIGHTS below,
+# which points at the general-purpose Qwen2.5 instruct baseline.
+QWEN3GUARD_WEIGHTS="${QWEN3GUARD_WEIGHTS:-${REPO_ROOT}/src/Qwen3Guard/weights/Qwen3Guard-Gen-8B}"
 QWEN_WEIGHTS="${QWEN_WEIGHTS:-${REPO_ROOT}/src/Qwen/weights/Qwen2.5-7B-Instruct}"
 LLAMA_WEIGHTS="${LLAMA_WEIGHTS:-${REPO_ROOT}/src/Llama/weights/Llama-3.1-8B-Instruct}"
 
@@ -118,4 +121,5 @@ export GUARDCHAT_TRAIN_SPLIT GUARDCHAT_TEST_SPLIT
 export SAFEGUIDER_RECOG_WEIGHTS SAFEGUIDER_BINARY_WEIGHTS
 export BILSTM_WEIGHTS BERT_WEIGHTS
 export LLAMAGUARD_WEIGHTS QWEN_WEIGHTS LLAMA_WEIGHTS SHIELDGEMMA_WEIGHTS
+export QWEN3GUARD_WEIGHTS
 export PYTHON DTYPE TEXT_KIND

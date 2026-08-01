@@ -11,7 +11,7 @@ categories and defines two safety tasks:
 | Goal | Multi-label classify whether a single prompt or a multi-turn conversation is unsafe, across `{sexual, illegal, shocking, violence, self-harm, harassment}`. | Rewrite an unsafe T2I prompt to remove NSFW concepts while preserving benign visual intent. |
 | Metrics | **Macro-F1**, **Recall**, **ASR** = `1 – Recall` (single-turn vs multi-turn) | **CLIP cosine similarity** (this repo) + **Safe Generation Rate (SGR)** via external T2I models (out of scope here) |
 
-This repository implements **5 baselines for Task 1** and **3 baselines
+This repository implements **7 baselines for Task 1** and **3 baselines
 for Task 2**, all sharing a single output schema so a downstream
 aggregator can compose Tables 1 and 2 of the paper.
 
@@ -26,8 +26,18 @@ aggregator can compose Tables 1 and 2 of the paper.
 | BiLSTM | supervised | `src/BiLSTM/` | PyTorch port of a stacked Bidirectional-LSTM, 6-way sigmoid head |
 | BERT | supervised | `src/BERT/` | `bert-base-uncased` + multi-label head (`problem_type="multi_label_classification"`) |
 | SafeGuider | supervised | `src/SafeGuider/` | CLIP-EOS embedding + 3-layer MLP, multi-label sigmoid |
-| Llama-Guard 3 | zero-shot | `src/LlamaGuard/` | `meta-llama/Llama-Guard-3-8B`, native S1–S14 taxonomy mapped to GuardChat 6 |
+| Llama-Guard 3 | zero-shot | `src/LlamaGuard/` | `meta-llama/Llama-Guard-3-8B`. 14 S-codes vs GuardChat's 6 — see [docs](docs/task1-llamaguard.md) |
+| ShieldGemma-2B | zero-shot | `src/ShieldGemma/` | `google/shieldgemma-2b`, per-policy `P(Yes)` judge. 4 policies vs 6 — see [docs](docs/task1-shieldhgemma.md) |
+| Qwen3Guard-Gen-8B | zero-shot | `src/Qwen3Guard/` | `Qwen/Qwen3Guard-Gen-8B`, 3-level severity + 9 categories — see [docs](docs/task1-qwen3guard.md) |
 | Qwen2.5-7B | zero-shot | `src/Qwen/` | `Qwen/Qwen2.5-7B-Instruct`, custom prompt enforcing 6-key JSON output |
+
+The three dedicated guard models each ship their own taxonomy that does
+**not** match GuardChat's six categories. All three expose the same two
+modes: `--mode guardchat` (the default — GuardChat's categories are
+injected into the prompt, so the mapping is 1-to-1) and `--mode native`
+(the model's own taxonomy plus a lossy mapping). Either way the raw model
+output is stored in the results file, so any mapping can be re-derived
+offline without re-running the model.
 
 ### Task 2 — Rewriting
 
@@ -62,6 +72,8 @@ order, `GuardChatSample`, all metrics, the rewrite prompt).
 │   ├── BERT/                  ← Task 1 supervised
 │   ├── SafeGuider/            ← Task 1 supervised + Task 2 beam-search rewriter
 │   ├── LlamaGuard/            ← Task 1 zero-shot (Llama-Guard-3-8B)
+│   ├── ShieldGemma/           ← Task 1 zero-shot (ShieldGemma-2B)
+│   ├── Qwen3Guard/            ← Task 1 zero-shot (Qwen3Guard-Gen-8B)
 │   ├── Qwen/                  ← Task 1 zero-shot (Qwen2.5-7B-Instruct)
 │   ├── Llama/                 ← Task 2 zero-shot (Llama-3.1-8B-Instruct)
 │   └── Gemini/                ← Task 2 API (Gemini 2.5 Flash)
@@ -209,6 +221,8 @@ Disk footprint:
 | Baseline | Path | Size |
 |----------|------|------|
 | Llama-Guard-3-8B | `src/LlamaGuard/weights/Llama-Guard-3-8B/` | ~16 GB |
+| ShieldGemma-2B | `src/ShieldGemma/weights/shieldgemma-2b/` | ~5 GB |
+| Qwen3Guard-Gen-8B | `src/Qwen3Guard/weights/Qwen3Guard-Gen-8B/` | ~16 GB |
 | Llama-3.1-8B-Instruct | `src/Llama/weights/Llama-3.1-8B-Instruct/` | ~16 GB |
 | Qwen2.5-7B-Instruct | `src/Qwen/weights/Qwen2.5-7B-Instruct/` | ~15 GB |
 | CLIP ViT-L/14 (SafeGuider) | `vendors/SafeGuider/weights/clip-vit-large-patch14/` | ~600 MB |
@@ -278,11 +292,15 @@ python -m src.SafeGuider.train_recognition \
 ## 5. Benchmark Task 1 — Recognition
 
 ```bash
-bash scripts/benchmark_task1.sh                   # all 5 baselines
+bash scripts/benchmark_task1.sh                   # all 7 baselines
 bash scripts/benchmark_task1.sh llamaguard qwen   # zero-shot subset
 ```
 
-The script writes one JSON per baseline to `${RESULTS_DIR}/`:
+The three guard models write **three** files each — one per input
+representation (`prompt`, `raw_prompt`, `conversation`) — under
+`experiment_results/task1/<model>/`, via their own scripts
+(`scripts/benchmark_task1_{llamaguard,shieldgemma,qwen3guard}.sh`). The
+remaining baselines write one JSON each to `${RESULTS_DIR}/`:
 
 ```jsonc
 {
