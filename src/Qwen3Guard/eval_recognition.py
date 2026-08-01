@@ -47,7 +47,7 @@ from src.utils import (  # noqa: E402
 )
 from src.Qwen3Guard.model import DEFAULT_LOCAL_DIR, DEFAULT_MODEL_NAME  # noqa: E402
 from src.Qwen3Guard.recognition import CONV_FORMATS, RecognitionPipeline  # noqa: E402
-from src.Qwen3Guard.taxonomy import MODES  # noqa: E402
+from src.Qwen3Guard.taxonomy import GUARDCHAT_CATEGORIES, MODES  # noqa: E402
 
 
 SLUG = "qwen3guard"
@@ -188,6 +188,32 @@ def main() -> int:
                   f"verdicts carried no category mappable in mode '{pipe.mode}' "
                   f"({names or 'no category listed'}) and were counted as safe. "
                   f"See 'raw_categories' / 'unmapped_categories' in the output.")
+
+        # Taxonomy-leak diagnostic. Qwen3Guard-Gen is fine-tuned hard on
+        # its own output vocabulary and often keeps answering in it even
+        # when the prompt's category block has been replaced - it writes
+        # "Violent" (native) rather than "Violence" (ours). The alias
+        # table still resolves those to the right GuardChat category, so
+        # the labels are not wrong; but a high leak rate means
+        # `--mode guardchat` is not really in force and `--mode native`
+        # is the more honest configuration to report. Measure it instead
+        # of eyeballing raw_categories.
+        if pipe.mode == "guardchat":
+            injected = set(GUARDCHAT_CATEGORIES)
+            leaked: Dict[str, int] = {}
+            rows = 0
+            for r in res["predictions"]:
+                off = [n for n in r.get("raw_categories", []) if n not in injected]
+                if off:
+                    rows += 1
+                    for n in off:
+                        leaked[n] = leaked.get(n, 0) + 1
+            if rows:
+                top = sorted(leaked.items(), key=lambda kv: -kv[1])[:6]
+                print(f"  TAXONOMY LEAK: {rows}/{len(res['predictions'])} rows named "
+                      f"a category outside the six injected into the prompt "
+                      f"({top}). The model is answering in its own taxonomy - "
+                      f"compare against --mode native before reporting this run.")
 
         sev = {}
         for r in res["predictions"]:
