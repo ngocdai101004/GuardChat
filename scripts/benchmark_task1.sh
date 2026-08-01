@@ -2,17 +2,18 @@
 # Run Task 1 (Multi-Label Unsafe Text Recognition) benchmark across baselines.
 #
 # Usage:
-#   bash scripts/benchmark_task1.sh                          # all 5 baselines
+#   bash scripts/benchmark_task1.sh                          # all 6 baselines
 #   bash scripts/benchmark_task1.sh bilstm bert              # subset
 #   bash scripts/benchmark_task1.sh llamaguard qwen          # zero-shot only
 #
 # Targets:
-#   bilstm      (supervised, needs trained weights)
-#   bert        (supervised, needs trained weights)
-#   safeguider  (supervised, needs trained weights)
-#   llamaguard  (zero-shot, needs Llama-Guard-3-8B local snapshot)
-#   qwen        (zero-shot, needs Qwen2.5-7B-Instruct local snapshot)
-#   all         shorthand for bilstm bert safeguider llamaguard qwen
+#   bilstm       (supervised, needs trained weights)
+#   bert         (supervised, needs trained weights)
+#   safeguider   (supervised, needs trained weights)
+#   llamaguard   (zero-shot, needs Llama-Guard-3-8B local snapshot)
+#   qwen         (zero-shot, needs Qwen2.5-7B-Instruct local snapshot)
+#   shieldgemma  (zero-shot, google/shieldgemma-2b; needs HF_TOKEN)
+#   all          shorthand for every target above
 #
 # Inputs (override via env):
 #   GUARDCHAT_TEST         default: multimedia-synergy-lab/GuardChat (HF)
@@ -21,6 +22,8 @@
 #
 # Outputs:
 #   ${RESULTS_DIR}/{bilstm,bert,safeguider,llamaguard,qwen}_task1.json
+#   experiment_results/task1/shieldgemma/shieldgemma_task1_{prompt,
+#       raw_prompt,conversation}.json   (see benchmark_task1_shieldgemma.sh)
 #
 # Each output JSON has:
 #   { "single":       { "metrics": {...}, "predictions": [...] },
@@ -32,7 +35,7 @@ source "$(dirname "$0")/env.sh"
 
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-    TARGETS=(bilstm bert safeguider llamaguard qwen)
+    TARGETS=(bilstm bert safeguider llamaguard qwen shieldgemma)
 fi
 
 require_data "GUARDCHAT_TEST" "${GUARDCHAT_TEST}"
@@ -101,23 +104,33 @@ eval_qwen() {
         --output "${RESULTS_DIR}/qwen_task1.json"
 }
 
+eval_shieldgemma() {
+    section "Eval ShieldGemma-2B (Task 1, zero-shot)"
+    # Delegated: ShieldGemma writes three files (prompt / raw_prompt /
+    # conversation) under experiment_results/task1/shieldgemma/ rather
+    # than the single ${RESULTS_DIR}/*_task1.json of the other baselines.
+    bash "${SCRIPT_DIR}/benchmark_task1_shieldgemma.sh" all
+}
+
 for tgt in "${TARGETS[@]}"; do
     case "${tgt}" in
-        bilstm)     eval_bilstm ;;
-        bert)       eval_bert ;;
-        safeguider) eval_safeguider ;;
-        llamaguard) eval_llamaguard ;;
-        qwen)       eval_qwen ;;
+        bilstm)      eval_bilstm ;;
+        bert)        eval_bert ;;
+        safeguider)  eval_safeguider ;;
+        llamaguard)  eval_llamaguard ;;
+        qwen)        eval_qwen ;;
+        shieldgemma) eval_shieldgemma ;;
         all)
             eval_bilstm
             eval_bert
             eval_safeguider
             eval_llamaguard
             eval_qwen
+            eval_shieldgemma
             ;;
         *)
             echo "Unknown target: ${tgt}" >&2
-            echo "Choose from: bilstm | bert | safeguider | llamaguard | qwen | all" >&2
+            echo "Choose from: bilstm | bert | safeguider | llamaguard | qwen | shieldgemma | all" >&2
             exit 2
             ;;
     esac
