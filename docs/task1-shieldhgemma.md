@@ -135,6 +135,35 @@ Các tuỳ chọn liên quan:
 
 Sau khi có snapshot, mọi lần chạy sau đều offline hoàn toàn.
 
+### Chạy trên server RunPod (`ada5000-runpod`)
+
+Đã kiểm chứng trên `ada5000-runpod` (RTX A5000 24 GB), repo tại
+`/root/darren_ws/guard/GuardChat`:
+
+- **Không cần venv.** System python 3.11 đã có `torch 2.4.1+cu124` +
+  `transformers 4.57.6` — đúng khoảng `>=4.42,<5`. Tạo venv mới sẽ tải lại
+  ~3 GB torch mà ổ `/` chỉ còn ~2 GB trống.
+- **Weights phải để trên `/workspace`.** Ổ overlay `/` đã dùng 96%
+  (còn 2.2 GB) trong khi snapshot nặng 4.9 GiB. Cách xử lý: symlink
+
+  ```bash
+  mkdir -p /workspace/darren/models
+  ln -s /workspace/darren/models/shieldgemma-2b \
+        /root/darren_ws/guard/GuardChat/src/ShieldGemma/weights/shieldgemma-2b
+  ```
+
+  giữ nguyên đường dẫn `--weights` mặc định. (Hoặc đơn giản hơn:
+  `SHIELDGEMMA_WEIGHTS=/workspace/darren/models/shieldgemma-2b`.)
+- **`PYTHON=python3`** vì server không có alias `python`:
+
+  ```bash
+  PYTHON=python3 bash scripts/benchmark_task1_shieldgemma.sh all
+  ```
+
+Tốc độ đo được trên A5000 (bfloat16, batch 4): `raw_prompt` ~8.5 sample/s,
+`prompt` ~4.3 sample/s, `conversation` ~2.2 sample/s → chạy đủ 1.000 sample
+cho cả 3 case mất khoảng **13–14 phút**.
+
 ## 3. Vấn đề lệch số class (4 vs 6)
 
 ShieldGemma **không phải** multi-label classifier. Nó là một judge nhị phân
