@@ -17,7 +17,6 @@ available:
   many-to-one mapping; ``shocking`` is unreachable in this mode.
 """
 
-from .hf_token import resolve_hf_token
 from .model import (
     DEFAULT_LOCAL_DIR,
     DEFAULT_MODEL_NAME,
@@ -25,16 +24,8 @@ from .model import (
     ShieldGemmaConfig,
     ShieldGemmaModel,
     build_scoring_prompt,
-    ensure_local_snapshot,
-    resolve_device,
 )
-from .recognition import (
-    TEXT_KINDS,
-    RecognitionPipeline,
-    RecognitionPrediction,
-    normalise_kind,
-    text_for_kind,
-)
+from .recognition import RecognitionPipeline, RecognitionPrediction
 from .taxonomy import (
     GUARDCHAT_POLICIES,
     GUARDCHAT_POLICY_TO_GUARDCHAT,
@@ -54,14 +45,8 @@ __all__ = [
     "ShieldGemmaConfig",
     "ShieldGemmaModel",
     "build_scoring_prompt",
-    "ensure_local_snapshot",
-    "resolve_device",
-    "resolve_hf_token",
-    "TEXT_KINDS",
     "RecognitionPipeline",
     "RecognitionPrediction",
-    "normalise_kind",
-    "text_for_kind",
     "MODES",
     "NATIVE_POLICIES",
     "NATIVE_POLICY_TO_GUARDCHAT",

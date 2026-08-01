@@ -5,12 +5,9 @@ Llama-Guard-3-8B is gated on HuggingFace. Before running this script:
     1. Visit https://huggingface.co/meta-llama/Llama-Guard-3-8B and
        request access (Meta's licence agreement). Approval is usually
        quick.
-    2. Authenticate from the CLI:
-
-           huggingface-cli login
-
-       or export ``HF_TOKEN=hf_...`` in your shell.
-
+    2. Provide a token - either ``huggingface-cli login``, or
+       ``export HF_TOKEN=hf_...``, or a ``HF_TOKEN=...`` line in the
+       repo-root ``.env`` file (see :mod:`src.utils.hf_token`).
     3. Download::
 
            python -m src.LlamaGuard.download_weights
@@ -23,6 +20,10 @@ By default we skip the optional ``original/`` folder shipped by Meta
 (it duplicates the weights as raw ``.consolidated.pth`` files - the
 HuggingFace ``.safetensors`` weights are sufficient for the
 ``transformers`` loader and save ~16 GB of disk).
+
+Running this ahead of time is optional - the benchmark populates the same
+folder on its first run - but doing it separately keeps the download step
+distinct from the evaluation step on a slow link.
 """
 
 from __future__ import annotations
@@ -36,18 +37,13 @@ _REPO_ROOT = os.path.normpath(os.path.join(_HERE, "..", ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
+from src.utils import (  # noqa: E402
+    DEFAULT_IGNORE_PATTERNS,
+    HF_TOKEN_ENV_KEYS as ENV_KEYS,
+    ensure_local_snapshot,
+    resolve_hf_token,
+)
 from src.LlamaGuard.model import DEFAULT_LOCAL_DIR, DEFAULT_MODEL_NAME  # noqa: E402
-
-
-# Patterns to skip during snapshot_download. We keep the
-# ``.safetensors`` weights, tokenizer files, and config; everything
-# else is optional and bloats the local copy.
-DEFAULT_IGNORE_PATTERNS = [
-    "original/*",
-    "*.bin",            # legacy pytorch_model.bin (we use safetensors)
-    "*.gguf",           # llama.cpp weights
-    "*.h5", "*.msgpack", "tf_model.h5", "flax_model.msgpack",
-]
 
 
 def main() -> int:
@@ -62,32 +58,35 @@ def main() -> int:
                    help="Also fetch the duplicated raw .pth weights under "
                         "`original/`. Doubles the disk footprint.")
     p.add_argument("--token", type=str, default=None,
-                   help="Override HuggingFace token. By default reads from "
-                        "`HF_TOKEN` env var or `huggingface-cli login`.")
+                   help="Override the HuggingFace token. By default reads "
+                        f"{' / '.join(ENV_KEYS)} from the environment or the "
+                        "repo-root .env file.")
+    p.add_argument("--force", action="store_true",
+                   help="Re-download even when the folder already holds a "
+                        "snapshot.")
     args = p.parse_args()
-
-    try:
-        from huggingface_hub import snapshot_download
-    except ImportError as e:
-        raise RuntimeError(
-            "huggingface_hub is required (pip install huggingface_hub)."
-        ) from e
 
     ignore = list(DEFAULT_IGNORE_PATTERNS)
     if args.include_original:
         ignore.remove("original/*")
 
-    os.makedirs(args.local_dir, exist_ok=True)
-    print(f"[LlamaGuard] downloading {args.repo_id!r} -> {args.local_dir}")
-    print("[LlamaGuard] this is a gated repo; make sure you have accepted")
-    print("             the licence at https://huggingface.co/meta-llama/Llama-Guard-3-8B")
+    token = resolve_hf_token(args.token)
+    print("[LlamaGuard] gated repo: make sure you have accepted the licence at")
+    print(f"             https://huggingface.co/{args.repo_id}")
+    print(f"[LlamaGuard] token: {'provided' if token else 'none (using HF cache login)'}")
     print(f"[LlamaGuard] ignore patterns: {ignore}")
 
-    snapshot_download(
+    if args.force:
+        marker = os.path.join(args.local_dir, "config.json")
+        if os.path.isfile(marker):
+            os.remove(marker)
+
+    ensure_local_snapshot(
+        args.local_dir,
         repo_id=args.repo_id,
-        local_dir=args.local_dir,
-        token=args.token,
+        token=token,
         ignore_patterns=ignore,
+        log_prefix="LlamaGuard",
     )
     print(f"[LlamaGuard] done. Local folder: {args.local_dir}")
     return 0

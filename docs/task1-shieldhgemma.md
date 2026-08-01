@@ -340,10 +340,14 @@ src/ShieldGemma/
 ├── recognition.py       RecognitionPipeline + 3 text kind
 ├── eval_recognition.py  CLI, checkpoint/resume, ghi 3 file JSON
 ├── download_weights.py  tải snapshot về weights/ (tuỳ chọn, chạy trước)
-├── hf_token.py          tìm HF token: CLI > env > .env > HF cache
 ├── weights/             snapshot shieldgemma-2b (git-ignored)
 └── configs/recognition.yaml
 ```
+
+Phần dùng chung với [Llama-Guard](task1-llamaguard.md) nằm ở `src/utils/`:
+`hf_token.py` (tìm token), `hf_model.py` (tải snapshot vào `weights/`, chọn
+device & dtype), `data.py` (`TEXT_KINDS`, `text_for_kind`), `task1_eval.py`
+(vòng eval + checkpoint), `metrics.py`.
 
 Điểm cần biết khi đọc `model.py`:
 

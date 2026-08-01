@@ -16,7 +16,9 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | `env.sh` | Sourced by every other script. Defines path / runtime defaults and helper functions. Override anything by `export`-ing before invoking. |
 | `download_weights.sh` | Snapshot-download Llama-Guard-3-8B / Llama-3.1-8B-Instruct (gated, needs HF token) and Qwen2.5-7B-Instruct + the CLIP encoder used by SafeGuider (open access). |
 | `train_task1_supervised.sh` | Train the three supervised Task-1 baselines (BiLSTM, BERT, SafeGuider). Recipe matches paper Section 6.1. |
-| `benchmark_task1.sh` | Evaluate Task 1 across the five baselines (BiLSTM, BERT, SafeGuider, Llama-Guard, Qwen). |
+| `benchmark_task1.sh` | Evaluate Task 1 across all six baselines (BiLSTM, BERT, SafeGuider, Llama-Guard, Qwen, ShieldGemma). |
+| `benchmark_task1_llamaguard.sh` | Llama-Guard-3-8B alone, over the three input representations. Weights auto-download into `src/LlamaGuard/weights/`. See `docs/task1-llamaguard.md`. |
+| `benchmark_task1_shieldgemma.sh` | ShieldGemma-2B alone, same three representations. See `docs/task1-shieldhgemma.md`. |
 | `benchmark_task2.sh` | Evaluate Task 2 across the three baselines (SafeGuider beam-search, Llama-3.1-8B, Gemini 2.5 Flash API). |
 | `benchmark_all.sh` | End-to-end: train + Task 1 + Task 2. `SKIP_TRAIN=1` to skip the training step. |
 
@@ -78,7 +80,9 @@ Everything else has a sensible default in `env.sh`.
 | `LR` | `2e-5` | Training learning rate |
 | `WD` | `1e-2` | Training weight decay |
 | `DEVICE` | unset | Force `cuda` / `cpu` (else `device_map='auto'`) |
-| `LLAMAGUARD_MODE` | `native` | Llama-Guard taxonomy: `native / custom` |
+| `LLAMAGUARD_MODE` | `guardchat` | Llama-Guard taxonomy: `guardchat / native` |
+| `LLAMAGUARD_CONV_FORMAT` | `turns` | Multi-turn encoding: `turns / concat` |
+| `SHIELDGEMMA_MODE` | `guardchat` | ShieldGemma policy set: `guardchat / native` |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model id |
 
 To pin a local file instead of the HF default, just override:

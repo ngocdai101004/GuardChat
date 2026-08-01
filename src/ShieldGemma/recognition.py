@@ -32,11 +32,14 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 from src.utils import (
     CATEGORIES,
     NUM_CATEGORIES,
+    TEXT_KINDS,
     GuardChatSample,
-    flatten_conversation,
+    gold_category,
+    normalise_text_kind,
+    resolve_hf_token,
+    text_for_kind,
 )
 
-from .hf_token import resolve_hf_token
 from .model import (
     DEFAULT_LOCAL_DIR,
     DEFAULT_MODEL_NAME,
@@ -51,43 +54,6 @@ from .taxonomy import (
     scores_to_guardchat_vector,
     unreachable_categories,
 )
-
-
-TEXT_KINDS: tuple = ("prompt", "raw_prompt", "conversation")
-
-# ``single`` is what the other Task-1 CLIs call the enhanced prompt; keep
-# it working here so shared tooling does not need a special case.
-_KIND_ALIASES: Dict[str, str] = {"single": "prompt", "enhanced_prompt": "prompt"}
-
-
-def normalise_kind(kind: str) -> str:
-    k = _KIND_ALIASES.get(kind, kind)
-    if k not in TEXT_KINDS:
-        raise ValueError(f"kind must be one of {TEXT_KINDS}, got {kind!r}")
-    return k
-
-
-def text_for_kind(
-    sample: GuardChatSample,
-    kind: str,
-    role_prefix: bool = True,
-) -> str:
-    """Extract the input text for one representation.
-
-    ``raw_prompt`` is read off the untouched source record
-    (:attr:`GuardChatSample.raw`) because the shared loader only promotes
-    the enhanced prompt to a first-class field.
-    """
-    k = normalise_kind(kind)
-    if k == "prompt":
-        return str(sample.enhanced_prompt or "")
-    if k == "raw_prompt":
-        raw = sample.raw.get("raw_prompt") or sample.raw.get("original_prompt") or ""
-        return str(raw)
-    text = flatten_conversation(sample.conversation, role_prefix=role_prefix)
-    # Fall back to the enhanced prompt for rows without a dialogue so the
-    # three runs stay index-aligned.
-    return text or str(sample.enhanced_prompt or "")
 
 
 # -------------------------- Prediction record ----------------------- #
@@ -205,9 +171,8 @@ class RecognitionPipeline:
         return dict(zip(keys, scores))
 
     def _predict_one(self, sample: GuardChatSample, kind: str) -> RecognitionPrediction:
-        k = normalise_kind(kind)
+        k = normalise_text_kind(kind)
         text = text_for_kind(sample, k, role_prefix=self.role_prefix)
-        gold = sample.raw.get("category") if isinstance(sample.raw, dict) else None
 
         if not text.strip():
             scores: Dict[str, float] = {key: 0.0 for key in self.policies}
@@ -230,7 +195,7 @@ class RecognitionPipeline:
             label_names=[c for c, v in zip(CATEGORIES, multi) if v == 1],
             threshold=self.threshold,
             label_vector_true=list(sample.label_vector),
-            gold_category=str(gold) if gold is not None else None,
+            gold_category=gold_category(sample),
             skipped=skipped,
         )
 
@@ -250,7 +215,7 @@ class RecognitionPipeline:
         if progress:
             try:
                 from tqdm import tqdm
-                iterator = tqdm(samples, desc=f"ShieldGemma[{normalise_kind(kind)}]")
+                iterator = tqdm(samples, desc=f"ShieldGemma[{normalise_text_kind(kind)}]")
             except ImportError:
                 iterator = samples
 
@@ -267,7 +232,5 @@ __all__ = [
     "TEXT_KINDS",
     "RecognitionPipeline",
     "RecognitionPrediction",
-    "normalise_kind",
-    "text_for_kind",
     "DEFAULT_MODEL_NAME",
 ]

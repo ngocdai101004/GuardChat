@@ -23,11 +23,14 @@ The mapping is opinionated:
 
 * The Llama-Guard taxonomy has no analogue for GuardChat's
   ``shocking`` (gore / body-horror / disturbing imagery) category, so
-  the native mode never predicts ``shocking``. Use ``mode='custom'``
+  the native mode never predicts ``shocking``. Use ``mode='guardchat'``
   in :class:`RecognitionPipeline` to instead pass GuardChat's six
   categories directly into the chat template - the model then reasons
   zero-shot over them and can fire on ``shocking``, at the cost of
   weaker accuracy on the natively-trained classes.
+
+This mirrors :mod:`src.ShieldGemma.taxonomy`, where the same two options
+are called ``native`` and ``guardchat``.
 """
 
 from __future__ import annotations
@@ -149,8 +152,9 @@ def scodes_to_guardchat_vector(
 
 
 # Compact, model-friendly description of each GuardChat category, used
-# by ``mode='custom'`` to override Llama-Guard's native taxonomy at
-# inference time. Phrasing borrows from Appendix A of the paper.
+# by ``mode='guardchat'`` to override Llama-Guard's native taxonomy at
+# inference time. Phrasing borrows from Appendix A of the paper and is
+# kept in sync with ``src.ShieldGemma.taxonomy.GUARDCHAT_POLICIES``.
 GUARDCHAT_CUSTOM_CATEGORIES: Dict[str, str] = {
     "S1": (
         "Sexual: Content that depicts or implies explicit sexual acts, "
@@ -184,7 +188,7 @@ GUARDCHAT_CUSTOM_CATEGORIES: Dict[str, str] = {
     ),
 }
 
-# Inverse used by ``mode='custom'`` to map S1-S6 back to GuardChat names.
+# Inverse used by ``mode='guardchat'`` to map S1-S6 back to GuardChat names.
 CUSTOM_SCODE_TO_GUARDCHAT: Dict[str, str] = {
     "S1": "sexual",
     "S2": "illegal",
@@ -193,3 +197,52 @@ CUSTOM_SCODE_TO_GUARDCHAT: Dict[str, str] = {
     "S5": "self-harm",
     "S6": "harassment",
 }
+
+
+# ----------------------------- Mode table ---------------------------- #
+
+MODES: Tuple[str, ...] = ("guardchat", "native")
+
+# ``custom`` was the original name of ``guardchat``; keep it accepted so
+# older commands and configs do not break.
+_MODE_ALIASES: Dict[str, str] = {"custom": "guardchat"}
+
+
+def normalise_mode(mode: str) -> str:
+    m = _MODE_ALIASES.get(mode, mode)
+    if m not in MODES:
+        raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
+    return m
+
+
+def scode_map_for_mode(mode: str) -> Dict[str, str]:
+    """S-code -> GuardChat category table for ``mode``."""
+    return dict(
+        CUSTOM_SCODE_TO_GUARDCHAT if normalise_mode(mode) == "guardchat"
+        else SCODE_TO_GUARDCHAT
+    )
+
+
+def unreachable_categories(mode: str) -> List[str]:
+    """GuardChat categories no S-code in ``mode`` can ever predict.
+
+    ``native`` returns ``['shocking']`` - useful to print as a warning so
+    a 0.0 F1 on that row is not mistaken for a modelling bug.
+    """
+    reachable = set(scode_map_for_mode(mode).values())
+    return [c for c in CATEGORIES if c not in reachable]
+
+
+__all__ = [
+    "MODES",
+    "LLAMAGUARD3_CATEGORIES",
+    "SCODE_TO_GUARDCHAT",
+    "GUARDCHAT_TO_SCODES",
+    "GUARDCHAT_CUSTOM_CATEGORIES",
+    "CUSTOM_SCODE_TO_GUARDCHAT",
+    "normalise_mode",
+    "parse_llamaguard_response",
+    "scode_map_for_mode",
+    "scodes_to_guardchat_vector",
+    "unreachable_categories",
+]

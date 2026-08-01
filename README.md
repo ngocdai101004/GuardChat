@@ -324,17 +324,25 @@ DTYPE=nf4  bash scripts/benchmark_task1.sh qwen
 
 Both `int8` and `nf4` require `bitsandbytes>=0.43` (Linux/Windows GPU only).
 
-### Llama-Guard taxonomy mode
+### Guard-model taxonomy mode
+
+Llama-Guard and ShieldGemma both ship a taxonomy that does not line up with
+GuardChat's six categories, so each exposes two modes:
 
 ```bash
-# default: native S1-S14 taxonomy + post-hoc mapping (no `shocking` predictions)
-LLAMAGUARD_MODE=native bash scripts/benchmark_task1.sh llamaguard
+# default: GuardChat's 6 categories passed to the model directly (class counts match)
+LLAMAGUARD_MODE=guardchat   bash scripts/benchmark_task1.sh llamaguard
+SHIELDGEMMA_MODE=guardchat  bash scripts/benchmark_task1.sh shieldgemma
 
-# alternative: pass GuardChat 6 categories directly into the chat template
-LLAMAGUARD_MODE=custom bash scripts/benchmark_task1.sh llamaguard
+# the models exactly as released; `shocking` is unreachable in both
+LLAMAGUARD_MODE=native      bash scripts/benchmark_task1.sh llamaguard
+SHIELDGEMMA_MODE=native     bash scripts/benchmark_task1.sh shieldgemma
 ```
 
-See `src/LlamaGuard/README.md` for the trade-offs.
+These two rows write three files each (`prompt` / `raw_prompt` /
+`conversation`) under `experiment_results/task1/<model>/`. See
+`docs/task1-llamaguard.md` and `docs/task1-shieldhgemma.md` for the
+trade-offs, weight download, and HF token setup.
 
 ---
 
@@ -503,8 +511,9 @@ the respective README:
 * `src/BiLSTM/README.md`
 * `src/BERT/README.md`
 * `src/SafeGuider/README.md`
-* `src/LlamaGuard/README.md`
 * `src/Qwen/README.md`
 * `src/Llama/README.md`
 * `src/Gemini/README.md`
+* `src/ShieldGemma/` — *(see `docs/task1-shieldhgemma.md`)*
+* `src/LlamaGuard/` — *(see `docs/task1-llamaguard.md`)*
 * `scripts/README.md` — bash entry points

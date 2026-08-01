@@ -10,7 +10,7 @@
 #   bilstm       (supervised, needs trained weights)
 #   bert         (supervised, needs trained weights)
 #   safeguider   (supervised, needs trained weights)
-#   llamaguard   (zero-shot, needs Llama-Guard-3-8B local snapshot)
+#   llamaguard   (zero-shot, meta-llama/Llama-Guard-3-8B; needs HF_TOKEN)
 #   qwen         (zero-shot, needs Qwen2.5-7B-Instruct local snapshot)
 #   shieldgemma  (zero-shot, google/shieldgemma-2b; needs HF_TOKEN)
 #   all          shorthand for every target above
@@ -21,9 +21,9 @@
 #   TEXT_KIND              default: both (single + conversation)
 #
 # Outputs:
-#   ${RESULTS_DIR}/{bilstm,bert,safeguider,llamaguard,qwen}_task1.json
-#   experiment_results/task1/shieldgemma/shieldgemma_task1_{prompt,
-#       raw_prompt,conversation}.json   (see benchmark_task1_shieldgemma.sh)
+#   ${RESULTS_DIR}/{bilstm,bert,safeguider,qwen}_task1.json
+#   experiment_results/task1/{llamaguard,shieldgemma}/<model>_task1_{prompt,
+#       raw_prompt,conversation}.json   (see the per-model scripts)
 #
 # Each output JSON has:
 #   { "single":       { "metrics": {...}, "predictions": [...] },
@@ -78,17 +78,11 @@ eval_safeguider() {
 }
 
 eval_llamaguard() {
-    section "Eval Llama-Guard-3-8B (Task 1, zero-shot)"
-    require_path "LLAMAGUARD_WEIGHTS" "${LLAMAGUARD_WEIGHTS}"
-    run_module src.LlamaGuard.eval_recognition \
-        --test "${GUARDCHAT_TEST}" \
-        --split "${GUARDCHAT_TEST_SPLIT}" \
-        --weights "${LLAMAGUARD_WEIGHTS}" \
-        --mode "${LLAMAGUARD_MODE:-native}" \
-        --dtype "${DTYPE}" \
-        --text-kind "${TEXT_KIND}" \
-        "${LLM_DEVICE_FLAG[@]}" \
-        --output "${RESULTS_DIR}/llamaguard_task1.json"
+    section "Eval Llama-Guard-3-8B (Task 1)"
+    # Delegated: LlamaGuard writes three files (prompt / raw_prompt /
+    # conversation) under experiment_results/task1/llamaguard/ rather
+    # than the single ${RESULTS_DIR}/*_task1.json of the supervised rows.
+    bash "${SCRIPT_DIR}/benchmark_task1_llamaguard.sh" all
 }
 
 eval_qwen() {

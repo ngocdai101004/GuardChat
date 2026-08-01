@@ -2,7 +2,6 @@
 
     python -m src.ShieldGemma.eval_recognition \
         --test build_dataset/dataset/final_df_test.json \
-        --weights google/shieldgemma-2b \
         --mode guardchat \
         --text-kind all \
         --output-dir experiment_results/task1/shieldgemma
@@ -12,11 +11,6 @@
     shieldgemma_task1_prompt.json        enhanced prompt   (X_single)
     shieldgemma_task1_raw_prompt.json    original seed prompt
     shieldgemma_task1_conversation.json  concatenated turns (X_conv)
-
-Each file follows the schema shared with the other Task-1 baselines::
-
-    { "<kind>": { "metrics": {...}, "predictions": [...] },
-      "meta":   {...} }
 
 ``metrics`` is computed with the default threshold as a convenience;
 every prediction also carries the raw per-policy ``P(Yes)`` scores, so
@@ -30,10 +24,9 @@ sample; re-running with ``--resume`` skips whatever is already there.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # Repo-root sys.path bootstrap.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -41,88 +34,22 @@ _REPO_ROOT = os.path.normpath(os.path.join(_HERE, "..", ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.utils import CATEGORIES, load_guardchat, summarise_recognition  # noqa: E402
-from src.ShieldGemma.model import DEFAULT_LOCAL_DIR, DEFAULT_MODEL_NAME  # noqa: E402
-from src.ShieldGemma.recognition import (  # noqa: E402
+from src.utils import (  # noqa: E402
+    DTYPE_CHOICES,
     TEXT_KINDS,
-    RecognitionPipeline,
-    RecognitionPrediction,
-    normalise_kind,
+    evaluate_kind,
+    load_guardchat,
+    normalise_text_kind,
+    print_metrics,
+    save_kind,
 )
+from src.ShieldGemma.model import DEFAULT_LOCAL_DIR, DEFAULT_MODEL_NAME  # noqa: E402
+from src.ShieldGemma.recognition import RecognitionPipeline  # noqa: E402
 from src.ShieldGemma.taxonomy import MODES, policies_for_mode  # noqa: E402
 
 
-DEFAULT_OUTPUT_DIR = os.path.join(_REPO_ROOT, "experiment_results", "task1", "shieldgemma")
-
-
-def _output_path(output_dir: str, kind: str) -> str:
-    return os.path.join(output_dir, f"shieldgemma_task1_{kind}.json")
-
-
-# --------------------------- Checkpointing --------------------------- #
-
-def _load_checkpoint(path: str) -> Dict[str, dict]:
-    """Read ``<output>.partial.jsonl`` into ``{sample_id: record}``."""
-    done: Dict[str, dict] = {}
-    if not os.path.isfile(path):
-        return done
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rec = json.loads(line)
-            except json.JSONDecodeError:
-                continue  # truncated last line from a killed run
-            sid = rec.get("sample_id")
-            if sid is not None:
-                done[str(sid)] = rec
-    return done
-
-
-def _evaluate_one_kind(
-    pipe: RecognitionPipeline,
-    samples,
-    kind: str,
-    output_dir: str,
-    resume: bool,
-) -> Dict[str, object]:
-    kind = normalise_kind(kind)
-    out_path = _output_path(output_dir, kind)
-    ckpt_path = out_path + ".partial.jsonl"
-
-    done = _load_checkpoint(ckpt_path) if resume else {}
-    if done:
-        print(f"  resuming: {len(done)} sample(s) already scored in {ckpt_path}")
-    if not resume and os.path.exists(ckpt_path):
-        os.remove(ckpt_path)
-
-    pending = [s for s in samples if str(s.sample_id) not in done]
-
-    ckpt_file = open(ckpt_path, "a", encoding="utf-8")
-
-    def _append(pred: RecognitionPrediction) -> None:
-        ckpt_file.write(json.dumps(pred.to_dict(), ensure_ascii=False) + "\n")
-        ckpt_file.flush()
-
-    try:
-        fresh = pipe.predict_samples(pending, kind=kind, on_prediction=_append)
-    finally:
-        ckpt_file.close()
-
-    for pred in fresh:
-        done[str(pred.sample_id)] = pred.to_dict()
-
-    # Restore the original dataset order.
-    records = [done[str(s.sample_id)] for s in samples if str(s.sample_id) in done]
-
-    y_true = [list(s.label_vector) for s in samples if str(s.sample_id) in done]
-    # Index by CATEGORIES rather than the dict's own order - checkpoint
-    # records round-trip through JSON and must stay column-aligned.
-    y_pred = [[int(r["multi_label"].get(c, 0)) for c in CATEGORIES] for r in records]
-    metrics = summarise_recognition(y_true, y_pred)
-    return {"metrics": metrics, "predictions": records, "path": out_path}
+SLUG = "shieldgemma"
+DEFAULT_OUTPUT_DIR = os.path.join(_REPO_ROOT, "experiment_results", "task1", SLUG)
 
 
 def main() -> int:
@@ -138,7 +65,7 @@ def main() -> int:
                    help="HF split when --test is a repo id. Default: test.")
     p.add_argument("--weights", type=str, default=DEFAULT_LOCAL_DIR,
                    help="Local snapshot dir (downloaded on first use) or an HF "
-                        f"id. Default: src/ShieldGemma/weights/shieldgemma-2b, "
+                        "id. Default: src/ShieldGemma/weights/shieldgemma-2b, "
                         f"auto-populated from {DEFAULT_MODEL_NAME}.")
     p.add_argument("--no-auto-download", action="store_true",
                    help="Fail instead of fetching the snapshot when the local "
@@ -147,8 +74,7 @@ def main() -> int:
                    help="'guardchat' = six GuardChat-aligned policies (class "
                         "counts match). 'native' = ShieldGemma's four published "
                         "policies + a lossy mapping (shocking never fires).")
-    p.add_argument("--dtype", type=str, default="auto",
-                   choices=["auto", "bfloat16", "float16", "float32", "int8", "nf4"],
+    p.add_argument("--dtype", type=str, default="auto", choices=list(DTYPE_CHOICES),
                    help="Weight dtype. 'auto' = float32 on CPU, bfloat16 "
                         "elsewhere. int8/nf4 need bitsandbytes (CUDA only).")
     p.add_argument("--device", type=str, default="auto",
@@ -195,7 +121,7 @@ def main() -> int:
     if args.text_kind == "all":
         kinds = list(TEXT_KINDS)
     else:
-        kinds = [normalise_kind(args.text_kind)]
+        kinds = [normalise_text_kind(args.text_kind)]
 
     policies = policies_for_mode(args.mode)
     print(f"Mode '{args.mode}': {len(policies)} policies "
@@ -214,16 +140,12 @@ def main() -> int:
         role_prefix=not args.no_role_prefix,
         auto_download=not args.no_auto_download,
     )
-    print(f"Loaded {args.weights} on {pipe.model.device} "
-          f"({pipe.model.dtype_name})")
+    print(f"Loaded {args.weights} on {pipe.model.device} ({pipe.model.dtype_name})")
 
     unreachable = pipe.unreachable_categories
     if unreachable:
-        print(f"  NOTE: mode '{args.mode}' has no policy for "
-              f"{unreachable} - those categories can never be predicted "
-              f"and will score F1 = 0.")
-
-    os.makedirs(args.output_dir, exist_ok=True)
+        print(f"  NOTE: mode '{args.mode}' has no policy for {unreachable} - "
+              f"those categories can never be predicted and will score F1 = 0.")
 
     meta: Dict[str, object] = {
         "model": args.weights,
@@ -241,31 +163,15 @@ def main() -> int:
     written: List[str] = []
     for kind in kinds:
         print(f"\n=== {kind} ===")
-        res = _evaluate_one_kind(
-            pipe, samples, kind, args.output_dir, resume=args.resume
+        res = evaluate_kind(
+            lambda pending, k, cb: pipe.predict_samples(pending, kind=k,
+                                                        on_prediction=cb),
+            samples, kind, args.output_dir, SLUG, resume=args.resume,
         )
-        metrics = res["metrics"]
-        out_path = str(res["path"])
-
-        payload = {
-            kind: {"metrics": metrics, "predictions": res["predictions"]},
-            "meta": {**meta, "text_kind": kind},
-        }
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
+        out_path = save_kind(res, kind, meta, keep_checkpoint=args.keep_checkpoint)
         written.append(out_path)
         print(f"Saved -> {out_path}")
-
-        for key in ["macro_f1", "recall_binary", "asr"]:
-            print(f"  {key:>14}: {metrics[key]:.4f}")
-        for k, v in metrics.items():
-            if k.startswith("f1_"):
-                print(f"  {k:>14}: {v:.4f}")
-
-        if not args.keep_checkpoint:
-            ckpt = out_path + ".partial.jsonl"
-            if os.path.exists(ckpt):
-                os.remove(ckpt)
+        print_metrics(res["metrics"])
 
     print("\nDone. Files written:")
     for pth in written:

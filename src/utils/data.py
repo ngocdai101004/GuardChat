@@ -365,6 +365,61 @@ def load_safe_prompts(path: str, sample_id_prefix: str = "safe") -> List[GuardCh
 
 # --------------------- Convenience helpers --------------------------- #
 
+# ------------------------ Input representations ---------------------- #
+
+# The three ways a Task-1 sample can be fed to a recogniser:
+#
+#   prompt        the enhanced adversarial prompt          ($X_{single}$)
+#   raw_prompt    the original seed prompt from the source dataset - same
+#                 sample without the enhancement step, so the gap between
+#                 the two runs isolates how much of the attack comes from
+#                 the rewriting
+#   conversation  the multi-turn dialogue concatenated       ($X_{conv}$)
+TEXT_KINDS: Tuple[str, ...] = ("prompt", "raw_prompt", "conversation")
+
+# ``single`` is what the older CLIs call the enhanced prompt; keep it
+# working so shared tooling needs no special case.
+_KIND_ALIASES: Dict[str, str] = {"single": "prompt", "enhanced_prompt": "prompt"}
+
+
+def normalise_text_kind(kind: str) -> str:
+    k = _KIND_ALIASES.get(kind, kind)
+    if k not in TEXT_KINDS:
+        raise ValueError(f"kind must be one of {TEXT_KINDS}, got {kind!r}")
+    return k
+
+
+def text_for_kind(
+    sample: "GuardChatSample",
+    kind: str,
+    role_prefix: bool = True,
+) -> str:
+    """Extract the input text for one representation.
+
+    ``raw_prompt`` is read off the untouched source record
+    (:attr:`GuardChatSample.raw`) because the loader only promotes the
+    enhanced prompt to a first-class field.
+    """
+    k = normalise_text_kind(kind)
+    if k == "prompt":
+        return str(sample.enhanced_prompt or "")
+    if k == "raw_prompt":
+        raw = sample.raw.get("raw_prompt") or sample.raw.get("original_prompt") or ""
+        return str(raw)
+    text = flatten_conversation(sample.conversation, role_prefix=role_prefix)
+    # Fall back to the enhanced prompt for rows without a dialogue so
+    # every run stays index-aligned with the others.
+    return text or str(sample.enhanced_prompt or "")
+
+
+def gold_category(sample: "GuardChatSample") -> Optional[str]:
+    """The single-label ``category`` string, when the record carries one."""
+    if not isinstance(sample.raw, dict):
+        return None
+    cat = sample.raw.get("category")
+    return str(cat) if cat is not None else None
+
+
 def split_texts_and_labels(
     samples: Sequence[GuardChatSample],
     kind: str = "single",

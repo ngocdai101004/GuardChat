@@ -1,7 +1,8 @@
-"""HuggingFace access-token resolution for the gated ShieldGemma repo.
+"""HuggingFace access-token resolution for the gated guard-model repos.
 
-``google/shieldgemma-2b`` is gated behind the Gemma licence, so every
-download / load needs a token. Resolution order (first hit wins):
+Both zero-shot baselines pull gated weights - ``google/shieldgemma-2b``
+(Gemma licence) and ``meta-llama/Llama-Guard-3-8B`` (Meta licence) - so
+every download / load needs a token. Resolution order (first hit wins):
 
 1. an explicit ``--token`` CLI argument,
 2. the ``HF_TOKEN`` / ``HUGGINGFACE_TOKEN`` / ``HUGGING_FACE_HUB_TOKEN``
@@ -26,6 +27,7 @@ ENV_KEYS = ("HF_TOKEN", "HUGGINGFACE_TOKEN", "HUGGING_FACE_HUB_TOKEN")
 _REPO_ROOT = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 )
+
 DEFAULT_ENV_FILE = os.path.join(_REPO_ROOT, ".env")
 
 

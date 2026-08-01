@@ -1,10 +1,10 @@
 """ShieldGemma-2B model wrapper for GuardChat Task 1 (zero-shot).
 
-Loads ``google/shieldgemma-2b`` (Gemma-2 backbone) either from a local
-snapshot populated by :mod:`src.ShieldGemma.download_weights` or straight
-from the Hub, and exposes :meth:`ShieldGemmaModel.score` which returns
-``P(Yes)`` - the probability that the input violates a given safety
-guideline.
+Loads ``google/shieldgemma-2b`` (Gemma-2 backbone) from the module's own
+``weights/`` folder - populated on first use, or ahead of time by
+:mod:`src.ShieldGemma.download_weights` - and exposes
+:meth:`ShieldGemmaModel.score`, which returns ``P(Yes)``: the probability
+that the input violates a given safety guideline.
 
 Scoring, not generation
 -----------------------
@@ -18,20 +18,20 @@ Access
 ------
 ``google/shieldgemma-2b`` is a gated repo. Accept the Gemma licence at
 https://huggingface.co/google/shieldgemma-2b, then expose a token via
-``HF_TOKEN`` (see :mod:`src.ShieldGemma.hf_token`).
+``HF_TOKEN`` (see :mod:`src.utils.hf_token`).
 
 Memory / dtype
 --------------
 The 2.6B-parameter backbone needs roughly:
 
-================  =============  ==========================================
-``dtype``          footprint      notes
-================  =============  ==========================================
-``bfloat16``      ~5.2 GB        default on CUDA and MPS; recommended
-``float32``       ~10.5 GB       default on CPU; slowest but safest
-``float16``       ~5.2 GB        Gemma-2 is known to overflow in fp16
-``int8`` / ``nf4`` ~3 / ~2 GB    needs bitsandbytes (CUDA only)
-================  =============  ==========================================
+==================  =============  ========================================
+``dtype``            footprint      notes
+==================  =============  ========================================
+``bfloat16``        ~5.2 GB        default on CUDA and MPS; recommended
+``float32``         ~10.5 GB       default on CPU; slowest but safest
+``float16``         ~5.2 GB        Gemma-2 is known to overflow in fp16
+``int8`` / ``nf4``  ~3 / ~2 GB     needs bitsandbytes (CUDA only)
+==================  =============  ========================================
 
 Tested with ``torch>=2.1`` and ``transformers>=4.42`` (first release with
 the Gemma-2 architecture).
@@ -44,6 +44,14 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
 import torch
+
+from src.utils import (
+    bnb_config,
+    default_dtype_for,
+    from_pretrained_with_dtype,
+    resolve_device,
+    resolve_weights_path,
+)
 
 
 DEFAULT_MODEL_NAME = "google/shieldgemma-2b"
@@ -82,59 +90,6 @@ def build_scoring_prompt(content: str, guideline: str) -> str:
     )
 
 
-def resolve_device(device: Optional[str] = None) -> torch.device:
-    """Pick a torch device. ``None`` / ``'auto'`` -> cuda > mps > cpu."""
-    if device and device != "auto":
-        return torch.device(device)
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
-
-
-def _default_dtype_for(device: torch.device) -> str:
-    # fp32 on CPU (bf16 matmul is slow there); bf16 elsewhere. Gemma-2
-    # overflows in fp16, so it is never a default.
-    return "float32" if device.type == "cpu" else "bfloat16"
-
-
-def _resolve_torch_dtype(name: str) -> torch.dtype:
-    n = name.lower()
-    if n in {"bfloat16", "bf16"}:
-        return torch.bfloat16
-    if n in {"float16", "fp16"}:
-        return torch.float16
-    if n in {"float32", "fp32"}:
-        return torch.float32
-    raise ValueError(
-        f"Unsupported torch dtype {name!r}. Use bfloat16 | float16 | float32 "
-        f"| int8 | nf4."
-    )
-
-
-def _bnb_config(name: str):
-    """Build a ``BitsAndBytesConfig`` for int8 / nf4 quantisation."""
-    n = name.lower()
-    if n not in {"int8", "8bit", "nf4", "4bit"}:
-        return None
-    try:
-        from transformers import BitsAndBytesConfig
-    except ImportError as e:  # pragma: no cover - hard runtime dep
-        raise RuntimeError(
-            "Quantised loading needs transformers with the BitsAndBytesConfig "
-            "API plus bitsandbytes >= 0.43 (CUDA only)."
-        ) from e
-    if n in {"int8", "8bit"}:
-        return BitsAndBytesConfig(load_in_8bit=True)
-    return BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
-
-
 @dataclass
 class ShieldGemmaConfig:
     model_path: str = DEFAULT_LOCAL_DIR
@@ -149,57 +104,6 @@ class ShieldGemmaConfig:
     # instead of leaving ~5 GB in the shared ~/.cache/huggingface tree.
     auto_download: bool = True
     repo_id: str = DEFAULT_MODEL_NAME
-
-
-def _is_hub_id(path: str) -> bool:
-    """True when ``path`` reads as ``owner/name`` rather than a folder.
-
-    A Hub id has exactly one ``/``, is not absolute, and its first
-    segment is not an existing directory - which is what separates
-    ``google/shieldgemma-2b`` from a relative ``weights/shieldgemma-2b``.
-    """
-    if os.path.isabs(path) or path.startswith(".") or path.count("/") != 1:
-        return False
-    return not os.path.isdir(os.path.dirname(path))
-
-
-def ensure_local_snapshot(
-    local_dir: str,
-    repo_id: str = DEFAULT_MODEL_NAME,
-    token: Optional[str] = None,
-) -> str:
-    """Download ``repo_id`` into ``local_dir`` unless it is already there.
-
-    Keeping weights under ``src/ShieldGemma/weights/`` (rather than the
-    shared HuggingFace cache) makes the experiment self-contained: one
-    folder to inspect, move, or delete.
-    """
-    marker = os.path.join(local_dir, "config.json")
-    if os.path.isfile(marker):
-        return local_dir
-
-    try:
-        from huggingface_hub import snapshot_download
-    except ImportError as e:  # pragma: no cover - hard runtime dep
-        raise RuntimeError(
-            "huggingface_hub is required to fetch the ShieldGemma weights "
-            "(pip install -r src/ShieldGemma/requirements.txt)."
-        ) from e
-
-    # realpath, not local_dir: `weights/shieldgemma-2b` is often a symlink
-    # onto a bigger volume, and makedirs(exist_ok=True) still raises
-    # FileExistsError on a symlink whose target does not exist yet.
-    os.makedirs(os.path.realpath(local_dir), exist_ok=True)
-    print(f"[ShieldGemma] weights not found in {local_dir}")
-    print(f"[ShieldGemma] downloading {repo_id!r} (~5 GB, one time)...")
-    snapshot_download(
-        repo_id=repo_id,
-        local_dir=local_dir,
-        token=token,
-        ignore_patterns=["*.bin", "*.gguf", "*.h5", "*.msgpack"],
-    )
-    print(f"[ShieldGemma] weights ready: {local_dir}")
-    return local_dir
 
 
 class ShieldGemmaModel:
@@ -217,27 +121,18 @@ class ShieldGemmaModel:
         token = self.config.token
         auth: Dict[str, Any] = {"token": token} if token else {}
 
-        path = self.config.model_path
-        if not os.path.isdir(path) and not _is_hub_id(path):
-            # A local folder that is not populated yet: fetch it in place
-            # so the weights stay next to the experiment.
-            if self.config.auto_download:
-                ensure_local_snapshot(path, repo_id=self.config.repo_id, token=token)
-            else:
-                raise FileNotFoundError(
-                    f"ShieldGemma weights not found at {path!r}. Run "
-                    f"`python -m src.ShieldGemma.download_weights` to populate "
-                    f"it, or pass a HuggingFace id via --weights."
-                )
-        elif os.path.isdir(path) and not os.path.isfile(os.path.join(path, "config.json")):
-            # Empty / partial folder (e.g. created by a killed download).
-            if self.config.auto_download:
-                ensure_local_snapshot(path, repo_id=self.config.repo_id, token=token)
+        path = resolve_weights_path(
+            self.config.model_path,
+            repo_id=self.config.repo_id,
+            token=token,
+            auto_download=self.config.auto_download,
+            log_prefix="ShieldGemma",
+        )
 
         self.device = resolve_device(self.config.device)
         dtype_name = self.config.dtype
         if not dtype_name or dtype_name == "auto":
-            dtype_name = _default_dtype_for(self.device)
+            dtype_name = default_dtype_for(self.device)
         self.dtype_name = dtype_name
 
         self.tokenizer = AutoTokenizer.from_pretrained(path, **auth)
@@ -247,26 +142,17 @@ class ShieldGemmaModel:
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        kwargs: Dict[str, Any] = dict(auth)
-        bnb = _bnb_config(dtype_name)
+        bnb = bnb_config(dtype_name)
         if bnb is not None:
-            kwargs["quantization_config"] = bnb
-            kwargs["device_map"] = "auto"
-        else:
-            kwargs["dtype"] = _resolve_torch_dtype(dtype_name)
-
-        try:
-            self.model = AutoModelForCausalLM.from_pretrained(path, **kwargs)
-        except TypeError:
-            # transformers < 4.56 spells the argument `torch_dtype`.
-            if "dtype" in kwargs:
-                kwargs["torch_dtype"] = kwargs.pop("dtype")
-            self.model = AutoModelForCausalLM.from_pretrained(path, **kwargs)
-
-        if bnb is None:
-            self.model.to(self.device)
-        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                path, quantization_config=bnb, device_map="auto", **auth
+            )
             self.device = next(self.model.parameters()).device
+        else:
+            self.model = from_pretrained_with_dtype(
+                AutoModelForCausalLM, path, dtype_name, **auth
+            )
+            self.model.to(self.device)
         self.model.eval()
 
         self.yes_id, self.no_id = self._yes_no_token_ids()
@@ -332,5 +218,4 @@ __all__ = [
     "ShieldGemmaConfig",
     "ShieldGemmaModel",
     "build_scoring_prompt",
-    "resolve_device",
 ]
