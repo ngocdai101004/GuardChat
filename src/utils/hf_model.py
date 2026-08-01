@@ -15,6 +15,7 @@ delete.
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Optional
 
@@ -39,8 +40,40 @@ def is_hub_id(path: str) -> bool:
 
 
 def snapshot_is_present(local_dir: str) -> bool:
-    """True when ``local_dir`` already holds a usable snapshot."""
-    return os.path.isfile(os.path.join(local_dir, "config.json"))
+    """True when ``local_dir`` holds a *complete* snapshot.
+
+    ``config.json`` alone is not enough: it is one of the first files a
+    snapshot download writes, so an interrupted 16 GB fetch leaves a
+    folder that looks ready but is missing shards. We therefore also
+    require every weight file to be on disk - via the shard index when
+    the model is sharded - and no leftover ``.incomplete`` temp files.
+    """
+    if not os.path.isfile(os.path.join(local_dir, "config.json")):
+        return False
+
+    index = os.path.join(local_dir, "model.safetensors.index.json")
+    if os.path.isfile(index):
+        try:
+            with open(index, "r", encoding="utf-8") as f:
+                weight_map = json.load(f).get("weight_map", {})
+        except (json.JSONDecodeError, OSError):
+            return False
+        shards = set(weight_map.values())
+        if not shards:
+            return False
+        if not all(os.path.isfile(os.path.join(local_dir, s)) for s in shards):
+            return False
+    elif not os.path.isfile(os.path.join(local_dir, "model.safetensors")):
+        # Unsharded models keep everything in a single file.
+        return False
+
+    # huggingface_hub parks partial downloads under
+    # <local_dir>/.cache/huggingface/download/*.incomplete.
+    staging = os.path.join(local_dir, ".cache", "huggingface", "download")
+    for root, _dirs, files in os.walk(staging):
+        if any(fn.endswith(".incomplete") for fn in files):
+            return False
+    return True
 
 
 # Duplicated or framework-specific artefacts we never need: the

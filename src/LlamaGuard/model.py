@@ -65,6 +65,64 @@ DEFAULT_LOCAL_DIR = os.path.join(
 )
 
 
+# The chat template shipped with meta-llama/Llama-Guard-3-8B **hardcodes**
+# the S1-S14 category block: it never reads a ``categories`` variable, and
+# ``apply_chat_template`` accepts unknown kwargs without complaining. So
+# passing ``categories=...`` is silently ignored - the model keeps
+# answering in its own taxonomy while the caller maps the codes with a
+# different table, which produces confidently wrong labels rather than an
+# error.
+#
+# To make a custom taxonomy actually take effect we render the prompt
+# ourselves. This string is a byte-for-byte reproduction of what the
+# shipped template emits (verified against
+# ``tokenizer.apply_chat_template(..., tokenize=False)``), with the
+# category block swapped for a parameter.
+PROMPT_TEMPLATE = (
+    " <|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+    "Task: Check if there is unsafe content in '{role}' messages in "
+    "conversations according our safety policy with the below categories.\n\n"
+    "<BEGIN UNSAFE CONTENT CATEGORIES>\n"
+    "{categories}\n"
+    "<END UNSAFE CONTENT CATEGORIES>\n\n"
+    "<BEGIN CONVERSATION>\n\n"
+    "{conversation}\n"
+    "<END CONVERSATION>\n\n"
+    "Provide your safety assessment for ONLY THE LAST {role} message in the "
+    "above conversation:\n"
+    " - First line must read 'safe' or 'unsafe'.\n"
+    " - If unsafe, a second line must include a comma-separated list of "
+    "violated categories.<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+)
+
+
+def build_custom_prompt(
+    chat: Sequence[Dict[str, str]],
+    categories: Mapping[str, str],
+) -> str:
+    """Render the Llama-Guard-3 prompt with a caller-supplied taxonomy.
+
+    ``categories`` maps a code to its description, e.g.
+    ``{"S1": "Sexual: ...", ...}``. The block is emitted as
+    ``S1: <description>.`` to match the shipped formatting.
+
+    The assessed role follows the shipped template: the last message
+    decides, so an odd number of turns targets ``User`` and an even
+    number targets ``Agent``.
+    """
+    role = "User" if len(chat) % 2 == 1 else "Agent"
+    cat_block = "\n".join(
+        f"{code}: {desc.strip().rstrip('.')}." for code, desc in categories.items()
+    )
+    lines = []
+    for i, message in enumerate(chat):
+        who = "User" if i % 2 == 0 else "Agent"
+        lines.append(f"{who}: {str(message.get('content', '')).strip()}\n")
+    return PROMPT_TEMPLATE.format(
+        role=role, categories=cat_block, conversation="\n".join(lines)
+    )
+
+
 @dataclass
 class GenerationConfig:
     """Sampling settings for the safety verdict.
@@ -85,7 +143,6 @@ class LlamaGuardConfig:
     device: Optional[str] = None
     token: Optional[str] = None
     custom_categories: Optional[Mapping[str, str]] = None
-    excluded_category_keys: Optional[Sequence[str]] = None
     generation: GenerationConfig = field(default_factory=GenerationConfig)
     # Fetch the snapshot into ``model_path`` when that folder is missing,
     # instead of leaving ~16 GB in the shared ~/.cache/huggingface tree.
@@ -145,24 +202,20 @@ class LlamaGuardModel:
     # ----------------- Chat-template / generation ------------------- #
 
     def _apply_chat_template(self, chat: Sequence[Dict[str, str]]) -> torch.Tensor:
-        """Format a chat for Llama-Guard, optionally overriding categories.
+        """Tokenise a chat into the Llama-Guard prompt.
 
-        ``custom_categories`` and ``excluded_category_keys`` are forwarded
-        verbatim to ``tokenizer.apply_chat_template``. The HuggingFace
-        Llama-Guard 3 tokenizer accepts both kwargs - older versions
-        only honour one of them, so we silently drop kwargs the
-        installed tokenizer does not understand.
+        With ``custom_categories`` set we render the prompt ourselves via
+        :func:`build_custom_prompt`, because the shipped chat template
+        ignores a ``categories`` override (see its docstring). Without
+        one we use the tokenizer's own template, which is the
+        authoritative rendering for the native S1-S14 taxonomy.
         """
-        kwargs: Dict[str, Any] = {"return_tensors": "pt"}
         if self.config.custom_categories is not None:
-            kwargs["categories"] = dict(self.config.custom_categories)
-        if self.config.excluded_category_keys:
-            kwargs["excluded_category_keys"] = list(self.config.excluded_category_keys)
-
-        try:
-            input_ids = self.tokenizer.apply_chat_template(list(chat), **kwargs)
-        except (TypeError, ValueError):
-            # Drop unrecognised kwargs and retry with the minimum.
+            text = build_custom_prompt(list(chat), self.config.custom_categories)
+            input_ids = self.tokenizer(
+                text, return_tensors="pt", add_special_tokens=False
+            ).input_ids
+        else:
             input_ids = self.tokenizer.apply_chat_template(
                 list(chat), return_tensors="pt",
             )
@@ -211,4 +264,6 @@ __all__ = [
     "GenerationConfig",
     "LlamaGuardConfig",
     "LlamaGuardModel",
+    "PROMPT_TEMPLATE",
+    "build_custom_prompt",
 ]

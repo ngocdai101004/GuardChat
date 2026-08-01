@@ -16,15 +16,17 @@ Input representations (``kind``)
 * ``raw_prompt`` - the original un-enhanced seed prompt from the source
   dataset. The gap against ``prompt`` isolates how much of the attack
   comes from the enhancement step.
-* ``conversation`` - the multi-turn dialogue ($X_{conv}$). Two encodings
-  are available, see ``conv_format`` below.
+* ``conversation`` - the multi-turn dialogue ($X_{conv}$), flattened
+  into one message by default; see ``conv_format`` below.
 
 Taxonomy modes (``mode``)
 -------------------------
-* ``guardchat`` (default) - pass GuardChat's six categories as a custom
-  taxonomy (S1=Sexual ... S6=Harassment) into the chat template. The
-  model reasons zero-shot over the GuardChat schema directly, so the
-  class counts match one-to-one and ``shocking`` is reachable.
+* ``guardchat`` (default) - swap the S1-S14 block for GuardChat's six
+  categories (S1=Sexual ... S6=Harassment). The shipped chat template
+  hardcodes its own list, so the prompt is rendered by
+  :func:`model.build_custom_prompt` instead. The model then reasons
+  zero-shot over the GuardChat schema, class counts match one-to-one,
+  and ``shocking`` is reachable.
 * ``native`` - use Llama-Guard-3's own S1-S14 hazard taxonomy, then map
   each S-code to a GuardChat category via
   :data:`taxonomy.SCODE_TO_GUARDCHAT`. This is the model exactly as
@@ -38,7 +40,7 @@ the model.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from src.utils import (
@@ -62,6 +64,7 @@ from .taxonomy import (
     GUARDCHAT_CUSTOM_CATEGORIES,
     MODES,
     normalise_mode,
+    scode_label_table,
     scode_map_for_mode,
     scodes_to_guardchat_vector,
     unreachable_categories,
@@ -70,13 +73,17 @@ from .taxonomy import (
 
 # How the multi-turn dialogue is handed to the model:
 #
-#   turns   forward the real turn list, letting Llama-Guard moderate the
-#           last user message in the context of the preceding ones. This
-#           is the model's training distribution and its default here.
 #   concat  flatten the dialogue into one user message, matching how the
-#           supervised baselines and ShieldGemma see $X_{conv}$. Use it
-#           when Table 1 needs an apples-to-apples input across rows.
-CONV_FORMATS = ("turns", "concat")
+#           supervised baselines and ShieldGemma see $X_{conv}$. Default,
+#           so Table 1 compares like with like.
+#   turns   forward the real turn list. Llama-Guard's chat template
+#           hard-requires strictly alternating user/assistant roles and
+#           raises otherwise, so consecutive same-role turns are merged
+#           into one message first. GuardChat dialogues are entirely
+#           user-side, which means this collapses to a single user
+#           message - i.e. the same content as `concat`, minus the
+#           'user: ' role prefixes.
+CONV_FORMATS = ("concat", "turns")
 
 
 # -------------------------- Prediction record ----------------------- #
@@ -91,6 +98,8 @@ class RecognitionPrediction:
     label_names: List[str]
     raw_response: str
     scodes: List[str]
+    scode_labels: List[str] = field(default_factory=list)
+    unmapped_scodes: List[str] = field(default_factory=list)
     label_vector_true: Optional[List[int]] = None
     gold_category: Optional[str] = None
     skipped: bool = False
@@ -103,12 +112,22 @@ class RecognitionPrediction:
             # ``probs`` is intentionally absent: Llama-Guard emits
             # discrete S-codes, not category probabilities. ``scodes`` +
             # ``raw_response`` are what make the mapping re-derivable.
+            # What the model actually answered, before any GuardChat
+            # remapping: the raw codes, their names under the taxonomy
+            # the model was shown, and the undecoded verdict string.
             "scodes": list(self.scodes),
+            "scode_labels": list(self.scode_labels),
             "raw_response": self.raw_response,
             "multi_label": {c: int(v) for c, v in zip(CATEGORIES, self.multi_label)},
             "predicted_categories": list(self.label_names),
             "binary_pred": int(self.binary_pred),
         }
+        if self.unmapped_scodes:
+            # The model said "unsafe" but with a code the active taxonomy
+            # cannot place - e.g. a leftover S7-S14 while running in
+            # guardchat mode. Such a row silently ends up all-zero, i.e.
+            # counted as safe, so record it rather than lose it.
+            out["unmapped_scodes"] = list(self.unmapped_scodes)
         if self.skipped:
             # Empty input (e.g. a missing raw_prompt): scored as safe
             # without a generation call, flagged so it can be excluded.
@@ -136,7 +155,7 @@ class RecognitionPipeline:
         mode: str = "guardchat",
         threshold: float = 0.5,  # kept for API symmetry; unused by Llama-Guard.
         role_prefix: bool = True,
-        conv_format: str = "turns",
+        conv_format: str = "concat",
     ) -> None:
         if conv_format not in CONV_FORMATS:
             raise ValueError(
@@ -148,6 +167,7 @@ class RecognitionPipeline:
         self.role_prefix = bool(role_prefix)
         self.conv_format = conv_format
         self._scode_map = scode_map_for_mode(self.mode)
+        self._scode_labels = scode_label_table(self.mode)
 
     @classmethod
     def from_pretrained(
@@ -159,7 +179,7 @@ class RecognitionPipeline:
         threshold: float = 0.5,
         token: Optional[str] = None,
         role_prefix: bool = True,
-        conv_format: str = "turns",
+        conv_format: str = "concat",
         auto_download: bool = True,
     ) -> "RecognitionPipeline":
         """Load Llama-Guard from a local snapshot folder (or HF id)."""
@@ -186,7 +206,13 @@ class RecognitionPipeline:
     # -------------------------- Inference ------------------------- #
 
     def _build_chat(self, sample: GuardChatSample, kind: str, text: str):
-        """Turn one sample into the chat list Llama-Guard expects."""
+        """Turn one sample into the chat list Llama-Guard expects.
+
+        The chat template refuses anything but strictly alternating
+        user/assistant turns, so consecutive same-role messages are
+        merged rather than passed through - otherwise every GuardChat
+        row (all user turns) would raise a Jinja ``TemplateError``.
+        """
         if kind == "conversation" and self.conv_format == "turns":
             chat: List[Dict[str, str]] = []
             for turn in sample.conversation:
@@ -194,7 +220,14 @@ class RecognitionPipeline:
                 content = str(turn.get("content", "")).strip()
                 if not content:
                     continue
-                chat.append({"role": role, "content": content})
+                if chat and chat[-1]["role"] == role:
+                    chat[-1]["content"] += "\n" + content
+                else:
+                    chat.append({"role": role, "content": content})
+            if chat and chat[0]["role"] != "user":
+                # The template assumes turn 0 is the user; prepend an
+                # empty one rather than let it mislabel every speaker.
+                chat.insert(0, {"role": "user", "content": ""})
             if chat:
                 return chat
             # Fall through to the flattened text for dialogue-less rows.
@@ -204,6 +237,7 @@ class RecognitionPipeline:
         k = normalise_text_kind(kind)
         text = text_for_kind(sample, k, role_prefix=self.role_prefix)
 
+        unmapped: List[str] = []
         if not text.strip():
             multi = [0] * NUM_CATEGORIES
             scodes: List[str] = []
@@ -216,6 +250,8 @@ class RecognitionPipeline:
                 scodes_to_guardchat_vector(scodes, scode_map=self._scode_map)
                 if is_unsafe else [0] * NUM_CATEGORIES
             )
+            if is_unsafe:
+                unmapped = [c for c in scodes if c.upper() not in self._scode_map]
             skipped = False
 
         return RecognitionPrediction(
@@ -227,6 +263,8 @@ class RecognitionPipeline:
             label_names=[c for c, v in zip(CATEGORIES, multi) if v == 1],
             raw_response=raw,
             scodes=list(scodes),
+            scode_labels=[self._scode_labels.get(c.upper(), "?") for c in scodes],
+            unmapped_scodes=unmapped,
             label_vector_true=list(sample.label_vector),
             gold_category=gold_category(sample),
             skipped=skipped,

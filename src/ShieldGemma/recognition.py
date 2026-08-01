@@ -50,6 +50,7 @@ from .model import (
 from .taxonomy import (
     MODES,
     policies_for_mode,
+    policy_label_table,
     policy_map_for_mode,
     scores_to_guardchat_vector,
     unreachable_categories,
@@ -64,6 +65,7 @@ class RecognitionPrediction:
     text_kind: str
     text: str
     policy_scores: Dict[str, float]
+    policy_labels: Dict[str, str]
     multi_label: List[int]
     binary_pred: int
     label_names: List[str]
@@ -77,18 +79,29 @@ class RecognitionPrediction:
         return max(self.policy_scores.values()) if self.policy_scores else 0.0
 
     def to_dict(self) -> Dict[str, Any]:
+        violated = [k for k, v in self.policy_scores.items()
+                    if float(v) >= self.threshold]
         out: Dict[str, Any] = {
             "sample_id": self.sample_id,
             "text_kind": self.text_kind,
             "text": self.text,
-            # Raw P(Yes) per policy - the re-thresholdable payload.
+            # ---- what the model actually answered ----
+            # ShieldGemma judges one policy at a time and returns P(Yes)
+            # per policy; these are its verbatim outputs, before any
+            # GuardChat remapping. Storing them makes every downstream
+            # number re-derivable at another threshold.
             "policy_scores": {k: float(v) for k, v in self.policy_scores.items()},
             "policy_flags": {
                 k: int(float(v) >= self.threshold)
                 for k, v in self.policy_scores.items()
             },
+            "violated_policies": violated,
+            "violated_policy_labels": [
+                self.policy_labels.get(k, k) for k in violated
+            ],
             "max_score": float(self.max_score),
             "threshold": float(self.threshold),
+            # ---- mapped onto the six GuardChat categories ----
             "multi_label": {c: int(v) for c, v in zip(CATEGORIES, self.multi_label)},
             "predicted_categories": list(self.label_names),
             "binary_pred": int(self.binary_pred),
@@ -129,6 +142,7 @@ class RecognitionPipeline:
         self.role_prefix = bool(role_prefix)
         self.policies = policies_for_mode(mode)
         self.policy_map = policy_map_for_mode(mode)
+        self.policy_labels = policy_label_table(mode)
 
     @classmethod
     def from_pretrained(
@@ -190,6 +204,7 @@ class RecognitionPipeline:
             text_kind=k,
             text=text,
             policy_scores=scores,
+            policy_labels=self.policy_labels,
             multi_label=multi,
             binary_pred=int(any(v == 1 for v in multi)),
             label_names=[c for c, v in zip(CATEGORIES, multi) if v == 1],

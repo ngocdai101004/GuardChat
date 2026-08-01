@@ -74,10 +74,10 @@ def main() -> int:
                         "weights folder is empty.")
     p.add_argument("--mode", type=str, default="guardchat",
                    choices=list(MODES) + ["custom"],
-                   help="'guardchat' = pass GuardChat's six categories into the "
-                        "chat template (class counts match; 'custom' is a "
-                        "deprecated alias). 'native' = Llama-Guard's own S1-S14 "
-                        "taxonomy + a lossy mapping (shocking never fires).")
+                   help="'guardchat' = render the prompt with GuardChat's six "
+                        "categories in place of S1-S14 (class counts match; "
+                        "'custom' is a deprecated alias). 'native' = the shipped "
+                        "S1-S14 taxonomy + a lossy mapping (shocking never fires).")
     p.add_argument("--dtype", type=str, default="auto", choices=list(DTYPE_CHOICES),
                    help="Weight dtype. 'auto' = float32 on CPU, bfloat16 "
                         "elsewhere. int8/nf4 need bitsandbytes (CUDA only).")
@@ -88,12 +88,13 @@ def main() -> int:
                    choices=list(TEXT_KINDS) + ["single", "all"],
                    help="Input representation. 'all' runs prompt, raw_prompt "
                         "and conversation in one go (three output files).")
-    p.add_argument("--conv-format", type=str, default="turns",
+    p.add_argument("--conv-format", type=str, default="concat",
                    choices=list(CONV_FORMATS),
                    help="How the dialogue is fed for --text-kind conversation. "
-                        "'turns' forwards the real turn list (Llama-Guard's "
-                        "training distribution). 'concat' flattens it into one "
-                        "user message, matching the other baselines' X_conv.")
+                        "'concat' flattens it into one user message, matching "
+                        "the other baselines' X_conv. 'turns' forwards the real "
+                        "turn list, merging consecutive same-role turns because "
+                        "the chat template demands strict alternation.")
     p.add_argument("--no-role-prefix", action="store_true",
                    help="Concatenate conversation turns without the 'user: ' "
                         "prefix. Only affects the recorded text and "
@@ -166,6 +167,16 @@ def main() -> int:
         out_path = save_kind(res, kind, meta, keep_checkpoint=args.keep_checkpoint)
         written.append(out_path)
         print(f"Saved -> {out_path}")
+
+        # An "unsafe" verdict carrying a code outside the active taxonomy
+        # collapses to an all-zero vector, i.e. it is scored as safe.
+        # Surface it instead of letting it quietly depress recall.
+        unmapped = [r for r in res["predictions"] if r.get("unmapped_scodes")]
+        if unmapped:
+            codes = sorted({c for r in unmapped for c in r["unmapped_scodes"]})
+            print(f"  WARNING: {len(unmapped)}/{len(res['predictions'])} unsafe "
+                  f"verdicts used codes outside mode '{pipe.mode}' ({codes}) and "
+                  f"were counted as safe. See 'unmapped_scodes' in the output.")
         print_metrics(res["metrics"])
 
     print("\nDone. Files written:")

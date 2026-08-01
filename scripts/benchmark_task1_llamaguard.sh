@@ -22,7 +22,7 @@
 #   LLAMAGUARD_TEST        default: build_dataset/dataset/final_df_test.json
 #   LLAMAGUARD_WEIGHTS     default: src/LlamaGuard/weights/Llama-Guard-3-8B
 #   LLAMAGUARD_MODE        default: guardchat  ('guardchat' | 'native')
-#   LLAMAGUARD_CONV_FORMAT default: turns      ('turns' | 'concat')
+#   LLAMAGUARD_CONV_FORMAT default: concat     ('concat' | 'turns')
 #   LLAMAGUARD_OUT         default: experiment_results/task1/llamaguard
 #   DEVICE                 default: auto  (auto | cuda | mps | cpu)
 #   DTYPE_LG               default: auto  (auto | bfloat16 | float16 | float32 | int8 | nf4)
@@ -39,7 +39,7 @@ source "$(dirname "$0")/env.sh"
 
 LLAMAGUARD_TEST="${LLAMAGUARD_TEST:-${REPO_ROOT}/build_dataset/dataset/final_df_test.json}"
 LLAMAGUARD_MODE="${LLAMAGUARD_MODE:-guardchat}"
-LLAMAGUARD_CONV_FORMAT="${LLAMAGUARD_CONV_FORMAT:-turns}"
+LLAMAGUARD_CONV_FORMAT="${LLAMAGUARD_CONV_FORMAT:-concat}"
 LLAMAGUARD_OUT="${LLAMAGUARD_OUT:-${REPO_ROOT}/experiment_results/task1/llamaguard}"
 DEVICE="${DEVICE:-auto}"
 DTYPE_LG="${DTYPE_LG:-auto}"

@@ -183,6 +183,24 @@ def policy_map_for_mode(mode: str) -> Dict[str, Tuple[str, ...]]:
     return dict(_MODE_TABLE[mode][1])
 
 
+def policy_label_table(mode: str) -> Dict[str, str]:
+    """Human-readable title of every policy *as the model was shown it*.
+
+    Every guideline opens with its own quoted title (``"No Dangerous
+    Content": The prompt shall not ...``), so the label the model
+    actually judged against is recovered by reading that prefix rather
+    than by maintaining a second, drift-prone table.
+    """
+    out: Dict[str, str] = {}
+    for key, guideline in policies_for_mode(mode).items():
+        text = guideline.strip()
+        if text.startswith('"') and '"' in text[1:]:
+            out[key] = text[1:].split('"', 1)[0]
+        else:
+            out[key] = key
+    return out
+
+
 def unreachable_categories(mode: str) -> List[str]:
     """GuardChat categories no policy in ``mode`` can ever predict.
 
@@ -225,6 +243,7 @@ __all__ = [
     "GUARDCHAT_POLICIES",
     "GUARDCHAT_POLICY_TO_GUARDCHAT",
     "policies_for_mode",
+    "policy_label_table",
     "policy_map_for_mode",
     "unreachable_categories",
     "scores_to_guardchat_vector",
