@@ -1,0 +1,382 @@
+{
+    "@context": {
+        "@language": "en",
+        "@vocab": "https://schema.org/",
+        "arrayShape": "cr:arrayShape",
+        "citeAs": "cr:citeAs",
+        "column": "cr:column",
+        "conformsTo": "dct:conformsTo",
+        "containedIn": "cr:containedIn",
+        "cr": "http://mlcommons.org/croissant/",
+        "data": {
+            "@id": "cr:data",
+            "@type": "@json"
+        },
+        "dataBiases": "cr:dataBiases",
+        "dataCollection": "cr:dataCollection",
+        "dataType": {
+            "@id": "cr:dataType",
+            "@type": "@vocab"
+        },
+        "dct": "http://purl.org/dc/terms/",
+        "extract": "cr:extract",
+        "field": "cr:field",
+        "fileProperty": "cr:fileProperty",
+        "fileObject": "cr:fileObject",
+        "fileSet": "cr:fileSet",
+        "format": "cr:format",
+        "includes": "cr:includes",
+        "isArray": "cr:isArray",
+        "isLiveDataset": "cr:isLiveDataset",
+        "jsonPath": "cr:jsonPath",
+        "key": "cr:key",
+        "md5": "cr:md5",
+        "parentField": "cr:parentField",
+        "path": "cr:path",
+        "personalSensitiveInformation": "cr:personalSensitiveInformation",
+        "recordSet": "cr:recordSet",
+        "references": "cr:references",
+        "regex": "cr:regex",
+        "repeated": "cr:repeated",
+        "replace": "cr:replace",
+        "sc": "https://schema.org/",
+        "separator": "cr:separator",
+        "source": "cr:source",
+        "subField": "cr:subField",
+        "transform": "cr:transform",
+        "rai": "http://mlcommons.org/croissant/RAI/",
+        "prov": "http://www.w3.org/ns/prov#"
+    },
+    "@type": "sc:Dataset",
+    "conformsTo": "http://mlcommons.org/croissant/1.1",
+    "name": "GuardChat",
+    "description": "multimedia-synergy-lab/GuardChat dataset hosted on Hugging Face and contributed by the HF Datasets community",
+    "alternateName": [
+        "multimedia-synergy-lab/GuardChat"
+    ],
+    "creator": {
+        "@type": "Person",
+        "name": "Anonymous",
+        "url": "https://huggingface.co/multimedia-synergy-lab"
+    },
+    "keywords": [
+        "cc-by-nc-4.0",
+        "10K - 100K",
+        "parquet",
+        "optimized-parquet",
+        "Text",
+        "Datasets",
+        "pandas",
+        "Polars",
+        "Croissant",
+        "\ud83c\uddfa\ud83c\uddf8 Region: US"
+    ],
+    "license": "https://choosealicense.com/licenses/cc-by-nc-4.0/",
+    "url": "https://huggingface.co/datasets/multimedia-synergy-lab/GuardChat",
+    "rai:dataCollection": "GuardChat is constructed via a fully automated two-stage pipeline. Stage 1: raw toxic prompts are aggregated from four established T2I safety datasets (I2P, Nibbler, JailbreakDiffBench, OVERT), preprocessed via near-duplicate removal and filtering, then enhanced using Gemini-2.5-Flash and a LoRA fine-tuned Qwen2.5-7B-Instruct model. Stage 2: multi-turn adversarial conversations (6–10 turns) are synthesised by Gemma-4-31B following a controlled escalation template. All 1,000 seed samples are verified by a Gemini-2.5-Flash-Image generative oracle; the remaining 9,000 samples are scaled via the fine-tuned pipeline. No real-world user data or crowdsourcing is involved.",
+    "rai:dataLimitations": "1) Linguistic scope: the dataset is English-only; jailbreak patterns that rely on multilingual or non-English cultural nuance are not captured. 2) Synthetic homogeneity: reliance on LLMs (Qwen2.5-7B-Instruct, Gemma-4-31B) for generation may introduce stylistic uniformity and under-represent the full diversity of real-world adversarial behaviour. 3) Oracle bias: Gemini-2.5-Flash-Image is the sole oracle for seed verification, which may introduce model-specific bias and limit generalisability to other T2I systems. 4) Temporal validity: observed Safe Generation Rates (SGR) and Attack Success Rates (ASR) represent a snapshot; proprietary T2I defences are continuously updated and results may change as vulnerabilities are patched. 5) Semantic evaluation: CLIP cosine similarity may not fully capture human-perceived semantic fidelity for prompt-rewriting evaluation. 6) No error bars: single-run evaluation is reported due to computational cost of multi-LLM and proprietary-API inference over the 1,000-sample test set.",
+    "rai:dataBiases": "1) Category imbalance: sexual content is the most represented category (29.0%) while self-harm is the least (11.9%), mirroring natural prevalence in real-world adversarial prompting but potentially causing models trained on this data to underperform on minority categories. 2) Source-level bias: I2P dominates at 63.4% of all samples and is the sole provider of self-harm examples; Nibbler contributes disproportionately to the sexual category (77.7% of its samples); OVERT is excluded from the test set entirely. 3) Test-set distribution shift: the oracle-verified test set over-represents harassment (25.9% vs. 14.4% in train) and under-represents self-harm (6.9% vs. 12.5%) and illegal (8.6% vs. 13.7%), creating an intentional but challenging out-of-distribution evaluation setting. 4) JailbreakDiffBench over-representation in test: 36.5% of the test set is drawn from JailbreakDiffBench vs. only 2.4% of training, which may inflate difficulty estimates. 5) Language/cultural bias: English-centric construction may not generalise to multilingual adversarial scenarios.",
+    "rai:personalSensitiveInformation": "The dataset contains no personally identifiable information (PII). All prompt–conversation pairs are fully synthesised by LLMs; no real user data, names, addresses, or other personal details are included. Automated PII filtering is applied during quality assurance to verify the absence of personal information prior to release. The dataset is released under a strict research-only (CC BY-NC 4.0) licence prohibiting malicious or commercial misuse.",
+    "rai:dataUseCases": "Intended use cases: (1) Academic research on conversational safety in text-to-image (T2I) systems, specifically the study of multi-turn, memory-exploiting jailbreak attacks. (2) Benchmarking safety models on two tasks: multi-label unsafe text recognition and NSFW concept removal via prompt rewriting. (3) Development and evaluation of context-aware, conversation-level defence strategies for generative AI systems. Out-of-scope / prohibited use cases: any use that attempts to exploit the adversarial patterns to bypass safety filters of deployed commercial T2I systems; any malicious, harmful, or commercial application of the adversarial prompt–conversation pairs. The dataset is released under CC BY-NC 4.0 and a strict research-only access policy.",
+    "rai:dataSocialImpact": "Positive impacts: GuardChat exposes a critical and previously under-studied vulnerability in T2I systems — the susceptibility to distributed, multi-turn jailbreak attacks. By providing the first large-scale benchmark for this threat, it enables the AI safety research community to develop more robust, context-aware defences, ultimately contributing to safer deployment of generative AI systems for all users. Negative / dual-use risks: releasing adversarial prompt–conversation pairs carries an inherent dual-use risk; malicious actors could study the escalation patterns to craft more effective attacks against deployed T2I systems. Mitigations: (a) the dataset is entirely LLM-synthesised and contains no real-world user data; (b) it is released under CC BY-NC 4.0 with an explicit prohibition on malicious or commercial exploitation; (c) the authors commit to responsible disclosure and will publicly release data and code only after the review process.",
+    "rai:hasSyntheticData": true,
+    "prov:wasDerivedFrom": [
+        {
+            "@id": "https://github.com/ml-research/safe-latent-diffusion",
+            "prov:label": "I2P (Inappropriate Image Prompts)",
+            "sc:license": "Research-only",
+            "sc:description": "Provides 6,339 real-world unsafe prompts from Stable Diffusion communities used as initial toxic seeds."
+        },
+        {
+            "@id": "https://huggingface.co/datasets/p-lambda/ani",
+            "prov:label": "Adversarial Nibbler",
+            "sc:license": "CC BY 4.0",
+            "sc:description": "Provides 2,307 crowdsourced adversarial red-teaming prompts with implicit harmful intent."
+        },
+        {
+            "@id": "https://github.com/iscas-tasi/JailbreakDiffBench",
+            "prov:label": "JailbreakDiffBench",
+            "sc:description": "Provides 578 systematically designed jailbreak prompts for diffusion models."
+        },
+        {
+            "@id": "https://arxiv.org/abs/2505.21347",
+            "prov:label": "OVERT",
+            "sc:description": "Provides 776 high-risk prompts focusing on safety-over-refusal trade-offs."
+        }
+    ],
+    "prov:wasGeneratedBy": [
+        {
+            "@type": "prov:Activity",
+            "prov:label": "Preprocessing and Cleaning",
+            "sc:description": "Removed near-duplicates using exact and fuzzy matching, filtered low-quality prompts (e.g., symbol-only or fewer than three words), and normalized platform-specific markup and encoding.",
+            "prov:wasAttributedTo": [
+                {
+                    "@type": "prov:SoftwareAgent",
+                    "@id": "guardchat_pipeline",
+                    "prov:label": "Automated Pipeline"
+                }
+            ]
+        },
+        {
+            "@type": "prov:Activity",
+            "prov:label": "Label Normalization",
+            "sc:description": "Mapped heterogeneous source labels into six unified GuardChat categories (sexual, illegal, shocking, violence, self-harm, harassment) using deterministic rule-based mapping.",
+            "prov:wasAttributedTo": [
+                {
+                    "@type": "prov:SoftwareAgent",
+                    "@id": "guardchat_pipeline",
+                    "prov:label": "Rule-based System"
+                }
+            ]
+        },
+        {
+            "@type": "prov:Activity",
+            "prov:label": "Prompt Enhancement and Conversation Synthesis",
+            "sc:description": "Enhanced toxic prompts with Gemini-2.5-Flash and a LoRA fine-tuned Qwen2.5-7B-Instruct model, then generated 6-10 turn adversarial conversations with Gemma-4-31B.",
+            "prov:wasAttributedTo": [
+                {
+                    "@type": "prov:SoftwareAgent",
+                    "@id": "guardchat_pipeline",
+                    "prov:label": "Gemini-2.5-Flash, Qwen2.5-7B-Instruct (LoRA), Gemma-4-31B"
+                }
+            ]
+        },
+        {
+            "@type": "prov:Activity",
+            "prov:label": "Quality Assurance and Verification",
+            "sc:description": "Validated seed samples using Gemini-2.5-Flash-Image as a generative oracle and applied automated consistency checks for label alignment, escalation coherence, and PII removal.",
+            "prov:wasAttributedTo": [
+                {
+                    "@type": "prov:SoftwareAgent",
+                    "@id": "guardchat_pipeline",
+                    "prov:label": "Gemini-2.5-Flash-Image and Automated Validation Pipeline"
+                }
+            ]
+        }
+    ],
+    "distribution": [
+        {
+            "@type": "cr:FileObject",
+            "@id": "repo",
+            "name": "repo",
+            "description": "The Hugging Face git repository.",
+            "contentUrl": "https://huggingface.co/datasets/multimedia-synergy-lab/GuardChat/tree/refs%2Fconvert%2Fparquet",
+            "encodingFormat": "git+https",
+            "sha256": "https://github.com/mlcommons/croissant/issues/80"
+        },
+        {
+            "@type": "cr:FileSet",
+            "@id": "parquet-files-for-config-default",
+            "containedIn": {
+                "@id": "repo"
+            },
+            "encodingFormat": "application/x-parquet",
+            "includes": "default/*/*.parquet"
+        }
+    ],
+    "recordSet": [
+        {
+            "@type": "cr:RecordSet",
+            "dataType": "cr:Split",
+            "key": {
+                "@id": "default_splits/split_name"
+            },
+            "@id": "default_splits",
+            "name": "default_splits",
+            "description": "Splits for the default config.",
+            "field": [
+                {
+                    "@type": "cr:Field",
+                    "@id": "default_splits/split_name",
+                    "dataType": "sc:Text"
+                }
+            ],
+            "data": [
+                {
+                    "default_splits/split_name": "train"
+                },
+                {
+                    "default_splits/split_name": "test"
+                },
+                {
+                    "default_splits/split_name": "full"
+                }
+            ]
+        },
+        {
+            "@type": "cr:RecordSet",
+            "@id": "default",
+            "description": "multimedia-synergy-lab/GuardChat - 'default' subset\n\nAdditional information:\n- 3 splits: train, test, full",
+            "field": [
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/split",
+                    "dataType": "sc:Text",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "fileProperty": "fullpath"
+                        },
+                        "transform": {
+                            "regex": "default/(?:partial-)?(train|test|full)/.+parquet$"
+                        }
+                    },
+                    "references": {
+                        "field": {
+                            "@id": "default_splits/split_name"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/id",
+                    "dataType": "cr:Int32",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "id"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/category",
+                    "dataType": "sc:Integer",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "category"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/prompt",
+                    "dataType": "sc:Text",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "prompt"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/raw_prompt",
+                    "dataType": "sc:Text",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "raw_prompt"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/source",
+                    "dataType": "sc:Integer",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "source"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/conversation_generator",
+                    "dataType": "sc:Integer",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "conversation_generator"
+                        }
+                    }
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/conversation",
+                    "subField": [
+                        {
+                            "@type": "cr:Field",
+                            "@id": "default/conversation/turn_id",
+                            "dataType": "cr:Int32",
+                            "source": {
+                                "fileSet": {
+                                    "@id": "parquet-files-for-config-default"
+                                },
+                                "extract": {
+                                    "column": "conversation"
+                                },
+                                "transform": {
+                                    "jsonPath": "turn_id"
+                                }
+                            }
+                        },
+                        {
+                            "@type": "cr:Field",
+                            "@id": "default/conversation/role",
+                            "dataType": "sc:Text",
+                            "source": {
+                                "fileSet": {
+                                    "@id": "parquet-files-for-config-default"
+                                },
+                                "extract": {
+                                    "column": "conversation"
+                                },
+                                "transform": {
+                                    "jsonPath": "role"
+                                }
+                            }
+                        },
+                        {
+                            "@type": "cr:Field",
+                            "@id": "default/conversation/content",
+                            "dataType": "sc:Text",
+                            "source": {
+                                "fileSet": {
+                                    "@id": "parquet-files-for-config-default"
+                                },
+                                "extract": {
+                                    "column": "conversation"
+                                },
+                                "transform": {
+                                    "jsonPath": "content"
+                                }
+                            }
+                        }
+                    ],
+                    "isArray": true,
+                    "arrayShape": "-1"
+                },
+                {
+                    "@type": "cr:Field",
+                    "@id": "default/conversation_text",
+                    "dataType": "sc:Text",
+                    "source": {
+                        "fileSet": {
+                            "@id": "parquet-files-for-config-default"
+                        },
+                        "extract": {
+                            "column": "conversation_text"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

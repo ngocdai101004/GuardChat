@@ -1,0 +1,49 @@
+{
+  "num_samples": 1000,
+  "categories": {
+    "harassment": 259,
+    "illegal": 86,
+    "violence": 160,
+    "shocking": 97,
+    "sexual": 329,
+    "self-harm": 69
+  },
+  "fields": [
+    "category",
+    "conversation",
+    "conversation_generator",
+    "id",
+    "prompt",
+    "raw_prompt",
+    "source"
+  ],
+  "id_min": 0,
+  "id_max": 9219,
+  "sources": {
+    "jailbreak_diffusion_bench": 365,
+    "nibbler": 251,
+    "i2p": 384
+  },
+  "source_category_counts": {
+    "jailbreak_diffusion_bench": {
+      "harassment": 181,
+      "illegal": 45,
+      "violence": 48,
+      "shocking": 48,
+      "sexual": 43
+    },
+    "nibbler": {
+      "violence": 39,
+      "sexual": 202,
+      "harassment": 10
+    },
+    "i2p": {
+      "violence": 73,
+      "self-harm": 69,
+      "sexual": 84,
+      "harassment": 68,
+      "shocking": 49,
+      "illegal": 41
+    }
+  }
+}
