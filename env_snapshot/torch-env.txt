@@ -1,0 +1,16 @@
+python        : 3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:50:00) [GCC 14.3.0]
+platform      : Linux-5.15.0-181-generic-x86_64-with-glibc2.39
+torch         : 2.12.0+cu130
+torch.cuda    : 13.0
+cudnn         : 92000
+cuda_available: True
+gpu[0]       : NVIDIA GeForce RTX 5090 | 31.4 GiB | sm_120
+transformers  : 4.57.6
+accelerate    : 1.14.0
+huggingface_hub: 0.36.2
+datasets      : -- (ModuleNotFoundError)
+tokenizers    : 0.22.2
+safetensors   : 0.8.0
+numpy         : 2.4.6
+google.genai  : -- (ModuleNotFoundError)
+bitsandbytes  : -- (ModuleNotFoundError)
