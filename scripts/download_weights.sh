@@ -75,7 +75,10 @@ download_safeguider_clip() {
     section "Downloading openai/clip-vit-large-patch14 for SafeGuider"
     # The vendored SafeGuider auto-downloads the CLIP encoder on first use,
     # but we trigger it explicitly here so subsequent eval runs are offline.
-    "${PYTHON}" - <<'PY'
+    #
+    # REPO_ROOT is a plain shell variable in env.sh, not an exported one,
+    # so the child interpreter below cannot see it without this prefix.
+    REPO_ROOT="${REPO_ROOT}" "${PYTHON}" - <<'PY'
 import os, sys
 sys.path.insert(0, os.path.join(os.environ["REPO_ROOT"], "vendors", "SafeGuider"))
 from encoder import resolve_encoder_path  # noqa: E402

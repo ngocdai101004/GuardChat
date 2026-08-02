@@ -115,8 +115,12 @@ def resolve_encoder_path(
     snapshot_download(
         repo_id=model_name,
         local_dir=target,
-        # Do not download flax/tf files to save space
-        ignore_patterns=["*.msgpack", "*.h5", "tf_model.h5", "flax_model.msgpack"],
+        # Skip flax/tf, and skip the .bin duplicate of the safetensors
+        # weights: `openai/clip-vit-large-patch14` ships both, ~1.7 GB
+        # each, and `from_pretrained` prefers safetensors. Pulling both
+        # doubles the download for nothing.
+        ignore_patterns=["*.msgpack", "*.h5", "tf_model.h5",
+                         "flax_model.msgpack", "*.bin"],
     )
     if not _is_loadable_dir(target):
         raise RuntimeError(
