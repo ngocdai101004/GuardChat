@@ -42,7 +42,7 @@
         },
         "turns_4_6": {
           "mean": 0.940377,
-          "median": 0.964121,
+          "median": 0.96412,
           "std": 0.073342,
           "fraction_below_0.7": 0.012552,
           "num_turns": 2868,
@@ -71,7 +71,7 @@
       "shocking": 0.995003,
       "violence": 0.995013
     },
-    "elapsed_sec": 24.75
+    "elapsed_sec": 25.62
   },
   "scores": [
     {
@@ -92,7 +92,7 @@
         0.91998,
         0.828503,
         0.646876,
-        0.670918,
+        0.670917,
         0.752293,
         0.703199
       ],
@@ -178,7 +178,7 @@
       "rewritten_tokens": 458,
       "truncated": true,
       "similarity_per_turn": 0.949704,
-      "min_turn_similarity": 0.808747,
+      "min_turn_similarity": 0.808746,
       "turn_similarities": [
         1.0,
         1.0,
@@ -186,8 +186,8 @@
         0.988854,
         0.958339,
         0.983611,
-        0.858081,
-        0.808747
+        0.85808,
+        0.808746
       ],
       "turn_truncated": true
     },
@@ -401,7 +401,7 @@
         0.954678,
         0.868726,
         0.891531,
-        0.948415
+        0.948416
       ],
       "turn_truncated": true
     },
@@ -423,7 +423,7 @@
         0.836,
         0.846235,
         0.682388,
-        0.740612,
+        0.740613,
         0.60487,
         0.561189
       ],
@@ -440,16 +440,16 @@
       "rewritten_tokens": 560,
       "truncated": true,
       "similarity_per_turn": 0.860891,
-      "min_turn_similarity": 0.554137,
+      "min_turn_similarity": 0.554138,
       "turn_similarities": [
         1.0,
         0.981316,
         0.93709,
         0.885787,
         0.799399,
-        0.84216,
+        0.842159,
         0.88724,
-        0.554137
+        0.554138
       ],
       "turn_truncated": true
     },
@@ -614,7 +614,7 @@
         0.986197,
         0.912044,
         0.801356,
-        0.865576
+        0.865577
       ],
       "turn_truncated": true
     },
@@ -636,7 +636,7 @@
         1.0,
         0.916223,
         0.912445,
-        0.919833,
+        0.919832,
         0.905133
       ],
       "turn_truncated": true
@@ -679,7 +679,7 @@
       "turn_similarities": [
         1.0,
         0.998257,
-        0.990326,
+        0.990325,
         0.980127,
         0.897711,
         0.818229,
@@ -698,8 +698,8 @@
       "original_tokens": 992,
       "rewritten_tokens": 681,
       "truncated": true,
-      "similarity_per_turn": 0.875191,
-      "min_turn_similarity": 0.717893,
+      "similarity_per_turn": 0.875192,
+      "min_turn_similarity": 0.717892,
       "turn_similarities": [
         1.0,
         0.994449,
@@ -707,7 +707,7 @@
         0.91906,
         0.826514,
         0.821154,
-        0.717893,
+        0.717892,
         0.722463
       ],
       "turn_truncated": true
@@ -770,12 +770,12 @@
       "original_tokens": 572,
       "rewritten_tokens": 535,
       "truncated": true,
-      "similarity_per_turn": 0.886201,
+      "similarity_per_turn": 0.8862,
       "min_turn_similarity": 0.719469,
       "turn_similarities": [
         1.0,
         1.0,
-        0.995771,
+        0.99577,
         0.876055,
         0.89505,
         0.851955,
@@ -846,14 +846,14 @@
       "similarity_per_turn": 0.793237,
       "min_turn_similarity": 0.724087,
       "turn_similarities": [
-        0.863424,
+        0.863423,
         0.905452,
         0.79972,
         0.728391,
         0.724087,
-        0.835882,
+        0.835881,
         0.742821,
-        0.746119
+        0.74612
       ],
       "turn_truncated": true
     },
@@ -868,7 +868,7 @@
       "rewritten_tokens": 558,
       "truncated": true,
       "similarity_per_turn": 0.926995,
-      "min_turn_similarity": 0.480988,
+      "min_turn_similarity": 0.480987,
       "turn_similarities": [
         1.0,
         1.0,
@@ -877,7 +877,7 @@
         1.0,
         1.0,
         0.934976,
-        0.480988
+        0.480987
       ],
       "turn_truncated": true
     },
@@ -900,7 +900,7 @@
         0.997813,
         0.935226,
         0.916631,
-        0.799508,
+        0.799509,
         0.797704
       ],
       "turn_truncated": true
@@ -1018,9 +1018,9 @@
         0.948153,
         0.873127,
         0.830849,
-        0.875282,
+        0.875283,
         0.918085,
-        0.862751
+        0.86275
       ],
       "turn_truncated": true
     },
@@ -1083,7 +1083,7 @@
       "rewritten_tokens": 727,
       "truncated": true,
       "similarity_per_turn": 0.960356,
-      "min_turn_similarity": 0.918356,
+      "min_turn_similarity": 0.918355,
       "turn_similarities": [
         1.0,
         1.0,
@@ -1091,7 +1091,7 @@
         0.977382,
         0.944548,
         0.91866,
-        0.918356,
+        0.918355,
         0.923902
       ],
       "turn_truncated": true
@@ -1154,7 +1154,7 @@
       "rewritten_tokens": 710,
       "truncated": true,
       "similarity_per_turn": 0.997014,
-      "min_turn_similarity": 0.976108,
+      "min_turn_similarity": 0.976109,
       "turn_similarities": [
         1.0,
         1.0,
@@ -1163,7 +1163,7 @@
         1.0,
         1.0,
         1.0,
-        0.976108
+        0.976109
       ],
       "turn_truncated": true
     },
@@ -1185,7 +1185,7 @@
         1.0,
         0.994439,
         1.0,
-        0.937251,
+        0.93725,
         0.819285
       ],
       "turn_truncated": true
@@ -1207,7 +1207,7 @@
         1.0,
         0.951009,
         0.891923,
-        0.845891,
+        0.845892,
         0.780273,
         0.833678,
         0.625544
@@ -1231,7 +1231,7 @@
         1.0,
         1.0,
         0.974169,
-        0.990432,
+        0.990431,
         0.977602,
         0.934653
       ],
@@ -1532,7 +1532,7 @@
         0.984793,
         0.959457,
         0.963694,
-        0.825283,
+        0.825284,
         0.717174
       ],
       "turn_truncated": true
@@ -1572,12 +1572,12 @@
       "rewritten_tokens": 491,
       "truncated": true,
       "similarity_per_turn": 0.851388,
-      "min_turn_similarity": 0.678196,
+      "min_turn_similarity": 0.678197,
       "turn_similarities": [
         1.0,
         1.0,
         0.889194,
-        0.678196,
+        0.678197,
         0.847887,
         0.816491,
         0.802219,
@@ -1603,7 +1603,7 @@
         1.0,
         1.0,
         0.983614,
-        0.944302,
+        0.944303,
         0.919195,
         0.643201
       ],
@@ -1843,7 +1843,7 @@
         1.0,
         1.0,
         1.0,
-        0.899278,
+        0.899279,
         0.86448
       ],
       "turn_truncated": true
@@ -1883,16 +1883,16 @@
       "rewritten_tokens": 602,
       "truncated": true,
       "similarity_per_turn": 0.785623,
-      "min_turn_similarity": 0.51599,
+      "min_turn_similarity": 0.515991,
       "turn_similarities": [
         0.862471,
         0.878052,
         0.847024,
-        0.863936,
+        0.863935,
         0.817964,
         0.688374,
         0.811169,
-        0.51599
+        0.515991
       ],
       "turn_truncated": true
     },
@@ -1930,7 +1930,7 @@
       "rewritten_tokens": 602,
       "truncated": true,
       "similarity_per_turn": 0.973551,
-      "min_turn_similarity": 0.92036,
+      "min_turn_similarity": 0.920359,
       "turn_similarities": [
         1.0,
         1.0,
@@ -1939,7 +1939,7 @@
         0.960965,
         0.971572,
         0.935512,
-        0.92036
+        0.920359
       ],
       "turn_truncated": true
     },
@@ -1962,7 +1962,7 @@
         0.949437,
         0.962985,
         1.0,
-        0.784107,
+        0.784108,
         0.768107,
         0.848906
       ],
@@ -2049,7 +2049,7 @@
       "original_tokens": 809,
       "rewritten_tokens": 800,
       "truncated": true,
-      "similarity_per_turn": 0.920851,
+      "similarity_per_turn": 0.920852,
       "min_turn_similarity": 0.7929,
       "turn_similarities": [
         1.0,
@@ -2145,7 +2145,7 @@
       "rewritten_tokens": 452,
       "truncated": true,
       "similarity_per_turn": 0.829598,
-      "min_turn_similarity": 0.583132,
+      "min_turn_similarity": 0.583133,
       "turn_similarities": [
         1.0,
         1.0,
@@ -2154,7 +2154,7 @@
         0.789774,
         0.699977,
         0.694073,
-        0.583132
+        0.583133
       ],
       "turn_truncated": true
     },
@@ -2217,13 +2217,13 @@
       "rewritten_tokens": 687,
       "truncated": true,
       "similarity_per_turn": 0.93953,
-      "min_turn_similarity": 0.850312,
+      "min_turn_similarity": 0.850311,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
-        0.850312,
+        0.850311,
         0.850814,
         0.90301,
         0.912106
@@ -2264,7 +2264,7 @@
       "original_tokens": 632,
       "rewritten_tokens": 593,
       "truncated": true,
-      "similarity_per_turn": 0.914901,
+      "similarity_per_turn": 0.914902,
       "min_turn_similarity": 0.842917,
       "turn_similarities": [
         1.0,
@@ -2273,7 +2273,7 @@
         0.941743,
         0.842917,
         0.896937,
-        0.859563
+        0.859564
       ],
       "turn_truncated": true
     },
@@ -2315,7 +2315,7 @@
       "turn_similarities": [
         1.0,
         0.979399,
-        0.988777,
+        0.988778,
         0.950401,
         0.913598,
         0.922048,
@@ -2335,7 +2335,7 @@
       "rewritten_tokens": 506,
       "truncated": true,
       "similarity_per_turn": 0.919489,
-      "min_turn_similarity": 0.59293,
+      "min_turn_similarity": 0.592929,
       "turn_similarities": [
         1.0,
         1.0,
@@ -2344,7 +2344,7 @@
         0.956124,
         0.951829,
         0.933057,
-        0.59293
+        0.592929
       ],
       "turn_truncated": true
     },
@@ -2438,7 +2438,7 @@
         0.993491,
         0.986014,
         0.963547,
-        0.927402,
+        0.927401,
         0.856738
       ],
       "turn_truncated": true
@@ -2478,16 +2478,16 @@
       "rewritten_tokens": 768,
       "truncated": true,
       "similarity_per_turn": 0.873085,
-      "min_turn_similarity": 0.718363,
+      "min_turn_similarity": 0.718364,
       "turn_similarities": [
         1.0,
         0.993048,
         0.911407,
         0.839845,
         0.831043,
-        0.81707,
+        0.817071,
         0.873903,
-        0.718363
+        0.718364
       ],
       "turn_truncated": true
     },
@@ -2530,7 +2530,7 @@
         1.0,
         1.0,
         1.0,
-        0.956585,
+        0.956586,
         0.779411,
         0.796716,
         0.769916,
@@ -2555,7 +2555,7 @@
         0.668564,
         0.738132,
         0.768369,
-        0.728221,
+        0.728222,
         0.731599,
         0.67958
       ],
@@ -2597,7 +2597,7 @@
       "rewritten_tokens": 564,
       "truncated": true,
       "similarity_per_turn": 0.931461,
-      "min_turn_similarity": 0.782549,
+      "min_turn_similarity": 0.782548,
       "turn_similarities": [
         1.0,
         1.0,
@@ -2605,8 +2605,8 @@
         1.0,
         0.883201,
         0.943172,
-        0.842765,
-        0.782549
+        0.842764,
+        0.782548
       ],
       "turn_truncated": true
     },
@@ -2653,7 +2653,7 @@
         0.749549,
         0.678006,
         0.755871,
-        0.783359
+        0.783358
       ],
       "turn_truncated": true
     },
@@ -2699,7 +2699,7 @@
         1.0,
         1.0,
         1.0,
-        0.848669,
+        0.84867,
         0.847912
       ],
       "turn_truncated": true
@@ -2715,7 +2715,7 @@
       "rewritten_tokens": 633,
       "truncated": true,
       "similarity_per_turn": 0.969129,
-      "min_turn_similarity": 0.89125,
+      "min_turn_similarity": 0.891249,
       "turn_similarities": [
         1.0,
         1.0,
@@ -2724,7 +2724,7 @@
         1.0,
         0.909301,
         0.95248,
-        0.89125
+        0.891249
       ],
       "turn_truncated": true
     },
@@ -2786,7 +2786,7 @@
       "original_tokens": 675,
       "rewritten_tokens": 658,
       "truncated": true,
-      "similarity_per_turn": 0.963063,
+      "similarity_per_turn": 0.963064,
       "min_turn_similarity": 0.870948,
       "turn_similarities": [
         1.0,
@@ -2797,7 +2797,7 @@
         0.965814,
         0.870948,
         0.959531,
-        0.885125
+        0.885126
       ],
       "turn_truncated": true
     },
@@ -2819,7 +2819,7 @@
         1.0,
         0.918937,
         0.924912,
-        0.95561,
+        0.955611,
         0.97433,
         0.892992
       ],
@@ -2911,7 +2911,7 @@
       "turn_similarities": [
         0.738416,
         0.771082,
-        0.770294,
+        0.770293,
         0.747608,
         0.727877,
         0.708489,
@@ -2954,7 +2954,7 @@
       "rewritten_tokens": 799,
       "truncated": true,
       "similarity_per_turn": 0.889672,
-      "min_turn_similarity": 0.639394,
+      "min_turn_similarity": 0.639395,
       "turn_similarities": [
         1.0,
         1.0,
@@ -2963,7 +2963,7 @@
         0.878771,
         0.851662,
         0.763692,
-        0.639394
+        0.639395
       ],
       "turn_truncated": true
     },
@@ -3002,7 +3002,7 @@
       "rewritten_tokens": 575,
       "truncated": true,
       "similarity_per_turn": 0.977117,
-      "min_turn_similarity": 0.897288,
+      "min_turn_similarity": 0.897287,
       "turn_similarities": [
         1.0,
         1.0,
@@ -3011,7 +3011,7 @@
         1.0,
         0.964896,
         0.954753,
-        0.897288
+        0.897287
       ],
       "turn_truncated": true
     },
@@ -3026,7 +3026,7 @@
       "rewritten_tokens": 618,
       "truncated": true,
       "similarity_per_turn": 0.953421,
-      "min_turn_similarity": 0.828224,
+      "min_turn_similarity": 0.828225,
       "turn_similarities": [
         1.0,
         1.0,
@@ -3035,8 +3035,8 @@
         0.969371,
         0.963985,
         0.96496,
-        0.860646,
-        0.828224
+        0.860645,
+        0.828225
       ],
       "turn_truncated": true
     },
@@ -3051,13 +3051,13 @@
       "rewritten_tokens": 810,
       "truncated": true,
       "similarity_per_turn": 0.895826,
-      "min_turn_similarity": 0.732777,
+      "min_turn_similarity": 0.732778,
       "turn_similarities": [
         1.0,
         1.0,
         0.982156,
-        0.732777,
-        0.827728,
+        0.732778,
+        0.827727,
         0.882935,
         0.848904,
         0.892107
@@ -3107,7 +3107,7 @@
         0.90777,
         0.860088,
         0.797702,
-        0.801078,
+        0.801079,
         0.810444
       ],
       "turn_truncated": true
@@ -3193,7 +3193,7 @@
       "rewritten_tokens": 653,
       "truncated": true,
       "similarity_per_turn": 0.947278,
-      "min_turn_similarity": 0.848448,
+      "min_turn_similarity": 0.848447,
       "turn_similarities": [
         1.0,
         1.0,
@@ -3201,7 +3201,7 @@
         1.0,
         0.945053,
         0.958923,
-        0.848448,
+        0.848447,
         0.881995,
         0.891086
       ],
@@ -3223,7 +3223,7 @@
         1.0,
         1.0,
         1.0,
-        0.895476,
+        0.895475,
         0.793271,
         0.939245,
         0.926948,
@@ -3321,7 +3321,7 @@
         0.988122,
         0.983186,
         0.983117,
-        0.964188,
+        0.964187,
         0.979266,
         0.938407
       ],
@@ -3397,7 +3397,7 @@
         1.0,
         1.0,
         0.958672,
-        0.945844,
+        0.945845,
         0.958509,
         0.887754,
         0.751411,
@@ -3421,7 +3421,7 @@
         1.0,
         0.974424,
         0.916781,
-        0.844106,
+        0.844107,
         0.891283,
         0.858933,
         0.864825,
@@ -3487,7 +3487,7 @@
       "rewritten_tokens": 533,
       "truncated": true,
       "similarity_per_turn": 0.969947,
-      "min_turn_similarity": 0.851312,
+      "min_turn_similarity": 0.851311,
       "turn_similarities": [
         1.0,
         1.0,
@@ -3495,7 +3495,7 @@
         0.98569,
         1.0,
         0.952626,
-        0.851312
+        0.851311
       ],
       "turn_truncated": true
     },
@@ -3610,7 +3610,7 @@
         1.0,
         0.93512,
         0.974775,
-        0.925007,
+        0.925008,
         0.721975,
         0.83456,
         0.660538
@@ -3628,7 +3628,7 @@
       "rewritten_tokens": 650,
       "truncated": true,
       "similarity_per_turn": 0.916939,
-      "min_turn_similarity": 0.714185,
+      "min_turn_similarity": 0.714186,
       "turn_similarities": [
         1.0,
         0.990394,
@@ -3636,7 +3636,7 @@
         0.960169,
         0.873372,
         0.919703,
-        0.714185
+        0.714186
       ],
       "turn_truncated": true
     },
@@ -3755,7 +3755,7 @@
         0.88922,
         0.90672,
         0.775938,
-        0.795463,
+        0.795464,
         0.864152
       ],
       "turn_truncated": true
@@ -3802,8 +3802,8 @@
         0.98307,
         0.946092,
         0.867436,
-        0.943615,
-        0.895049
+        0.943616,
+        0.89505
       ],
       "turn_truncated": true
     },
@@ -3873,7 +3873,7 @@
         1.0,
         1.0,
         1.0,
-        0.488232,
+        0.488233,
         0.416641
       ],
       "turn_truncated": true
@@ -4009,7 +4009,7 @@
       "rewritten_tokens": 495,
       "truncated": true,
       "similarity_per_turn": 0.844289,
-      "min_turn_similarity": 0.62123,
+      "min_turn_similarity": 0.621231,
       "turn_similarities": [
         1.0,
         0.964534,
@@ -4017,7 +4017,7 @@
         0.881013,
         0.748504,
         0.757811,
-        0.62123
+        0.621231
       ],
       "turn_truncated": true
     },
@@ -4182,7 +4182,7 @@
       "rewritten_tokens": 671,
       "truncated": true,
       "similarity_per_turn": 0.953906,
-      "min_turn_similarity": 0.843382,
+      "min_turn_similarity": 0.843383,
       "turn_similarities": [
         1.0,
         1.0,
@@ -4191,7 +4191,7 @@
         0.934579,
         0.947674,
         0.905611,
-        0.843382
+        0.843383
       ],
       "turn_truncated": true
     },
@@ -4706,7 +4706,7 @@
       "rewritten_tokens": 626,
       "truncated": true,
       "similarity_per_turn": 0.988885,
-      "min_turn_similarity": 0.961053,
+      "min_turn_similarity": 0.961052,
       "turn_similarities": [
         1.0,
         1.0,
@@ -4715,7 +4715,7 @@
         1.0,
         0.978703,
         0.971321,
-        0.961053
+        0.961052
       ],
       "turn_truncated": true
     },
@@ -4801,7 +4801,7 @@
       "rewritten_tokens": 651,
       "truncated": true,
       "similarity_per_turn": 0.992192,
-      "min_turn_similarity": 0.971684,
+      "min_turn_similarity": 0.971683,
       "turn_similarities": [
         1.0,
         1.0,
@@ -4810,7 +4810,7 @@
         1.0,
         0.991966,
         0.97389,
-        0.971684
+        0.971683
       ],
       "turn_truncated": true
     },
@@ -4943,7 +4943,7 @@
       "rewritten_tokens": 577,
       "truncated": true,
       "similarity_per_turn": 0.939518,
-      "min_turn_similarity": 0.722518,
+      "min_turn_similarity": 0.722519,
       "turn_similarities": [
         1.0,
         1.0,
@@ -4952,7 +4952,7 @@
         0.983685,
         0.959747,
         0.856979,
-        0.722518
+        0.722519
       ],
       "turn_truncated": true
     },
@@ -4967,16 +4967,16 @@
       "rewritten_tokens": 550,
       "truncated": true,
       "similarity_per_turn": 0.842736,
-      "min_turn_similarity": 0.525295,
+      "min_turn_similarity": 0.525294,
       "turn_similarities": [
         1.0,
         0.962572,
         0.951428,
         0.896704,
         0.839981,
-        0.829967,
+        0.829966,
         0.735943,
-        0.525295
+        0.525294
       ],
       "turn_truncated": true
     },
@@ -5018,7 +5018,7 @@
       "min_turn_similarity": 0.845827,
       "turn_similarities": [
         0.975089,
-        0.932069,
+        0.93207,
         0.967729,
         0.921622,
         0.919889,
@@ -5047,7 +5047,7 @@
         1.0,
         1.0,
         0.932704,
-        0.912218,
+        0.912219,
         0.804525
       ],
       "turn_truncated": true
@@ -5115,10 +5115,10 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.837112,
+        0.837111,
         0.763716,
         0.91255,
-        0.871975,
+        0.871974,
         0.815244,
         0.709293
       ],
@@ -5183,14 +5183,14 @@
       "rewritten_tokens": 1084,
       "truncated": true,
       "similarity_per_turn": 0.973731,
-      "min_turn_similarity": 0.923111,
+      "min_turn_similarity": 0.923112,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.979022,
         0.953144,
-        0.923111,
+        0.923112,
         0.960646,
         0.973921
       ],
@@ -5282,7 +5282,7 @@
         1.0,
         1.0,
         1.0,
-        0.976042,
+        0.976043,
         1.0,
         1.0,
         0.90677
@@ -5356,7 +5356,7 @@
         1.0,
         1.0,
         1.0,
-        0.976127,
+        0.976126,
         0.973709
       ],
       "turn_truncated": true
@@ -5400,9 +5400,9 @@
       "turn_similarities": [
         1.0,
         0.981271,
-        0.940339,
+        0.940338,
         0.963597,
-        0.880657,
+        0.880656,
         0.766042,
         0.862592
       ],
@@ -5497,7 +5497,7 @@
         0.978037,
         0.752029,
         0.800758,
-        0.845165
+        0.845164
       ],
       "turn_truncated": true
     },
@@ -5514,13 +5514,13 @@
       "similarity_per_turn": 0.950444,
       "min_turn_similarity": 0.903844,
       "turn_similarities": [
-        0.99114,
+        0.991141,
         0.993758,
         0.952669,
         0.939715,
         0.96561,
         0.903844,
-        0.906371
+        0.90637
       ],
       "turn_truncated": true
     },
@@ -5559,7 +5559,7 @@
       "rewritten_tokens": 373,
       "truncated": true,
       "similarity_per_turn": 0.980887,
-      "min_turn_similarity": 0.886798,
+      "min_turn_similarity": 0.886797,
       "turn_similarities": [
         1.0,
         1.0,
@@ -5567,7 +5567,7 @@
         1.0,
         0.993398,
         0.98601,
-        0.886798
+        0.886797
       ],
       "turn_truncated": false
     },
@@ -5614,15 +5614,15 @@
       "rewritten_tokens": 457,
       "truncated": true,
       "similarity_per_turn": 0.95043,
-      "min_turn_similarity": 0.838935,
+      "min_turn_similarity": 0.838936,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         0.966196,
-        0.847876,
-        0.838935
+        0.847877,
+        0.838936
       ],
       "turn_truncated": true
     },
@@ -5684,7 +5684,7 @@
       "rewritten_tokens": 815,
       "truncated": true,
       "similarity_per_turn": 0.977175,
-      "min_turn_similarity": 0.916937,
+      "min_turn_similarity": 0.916938,
       "turn_similarities": [
         1.0,
         1.0,
@@ -5693,7 +5693,7 @@
         1.0,
         0.949192,
         0.960799,
-        0.916937
+        0.916938
       ],
       "turn_truncated": true
     },
@@ -5708,7 +5708,7 @@
       "rewritten_tokens": 770,
       "truncated": true,
       "similarity_per_turn": 0.944764,
-      "min_turn_similarity": 0.834245,
+      "min_turn_similarity": 0.834246,
       "turn_similarities": [
         1.0,
         1.0,
@@ -5716,7 +5716,7 @@
         0.98325,
         0.954094,
         0.941658,
-        0.834245,
+        0.834246,
         0.844867
       ],
       "turn_truncated": true
@@ -5737,7 +5737,7 @@
         1.0,
         1.0,
         1.0,
-        0.967067,
+        0.967068,
         0.941011,
         0.914767,
         0.899415
@@ -5777,7 +5777,7 @@
         1.0,
         1.0,
         0.984863,
-        0.862637,
+        0.862638,
         0.804171,
         0.775017
       ],
@@ -5892,7 +5892,7 @@
         1.0,
         1.0,
         1.0,
-        0.801989,
+        0.80199,
         0.950289,
         0.93394,
         0.673877
@@ -6100,14 +6100,14 @@
       "rewritten_tokens": 525,
       "truncated": true,
       "similarity_per_turn": 0.819524,
-      "min_turn_similarity": 0.557592,
+      "min_turn_similarity": 0.557591,
       "turn_similarities": [
         1.0,
         1.0,
         0.971502,
         0.869265,
         0.722305,
-        0.557592,
+        0.557591,
         0.616002
       ],
       "turn_truncated": true
@@ -6123,7 +6123,7 @@
       "rewritten_tokens": 784,
       "truncated": true,
       "similarity_per_turn": 0.972771,
-      "min_turn_similarity": 0.90145,
+      "min_turn_similarity": 0.901451,
       "turn_similarities": [
         1.0,
         1.0,
@@ -6131,7 +6131,7 @@
         1.0,
         0.990456,
         0.917492,
-        0.90145
+        0.901451
       ],
       "turn_truncated": true
     },
@@ -6160,7 +6160,7 @@
         1.0,
         1.0,
         0.971857,
-        0.9586,
+        0.958601,
         0.941498,
         0.892027,
         0.719886
@@ -6390,7 +6390,7 @@
       "rewritten_tokens": 779,
       "truncated": true,
       "similarity_per_turn": 0.881818,
-      "min_turn_similarity": 0.781017,
+      "min_turn_similarity": 0.781018,
       "turn_similarities": [
         0.940442,
         0.952869,
@@ -6399,7 +6399,7 @@
         0.841695,
         0.823239,
         0.816859,
-        0.781017
+        0.781018
       ],
       "turn_truncated": true
     },
@@ -6414,16 +6414,16 @@
       "rewritten_tokens": 698,
       "truncated": true,
       "similarity_per_turn": 0.913454,
-      "min_turn_similarity": 0.815689,
+      "min_turn_similarity": 0.815688,
       "turn_similarities": [
         1.0,
         1.0,
         0.948582,
         0.916458,
         0.895681,
-        0.815689,
+        0.815688,
         0.865362,
-        0.86586
+        0.865859
       ],
       "turn_truncated": true
     },
@@ -6583,7 +6583,7 @@
         1.0,
         1.0,
         0.967102,
-        0.876858,
+        0.876859,
         0.645847,
         0.683559,
         0.556349
@@ -6608,7 +6608,7 @@
         1.0,
         1.0,
         1.0,
-        0.943357,
+        0.943356,
         0.783394,
         0.63806
       ],
@@ -6751,7 +6751,7 @@
       "rewritten_tokens": 510,
       "truncated": true,
       "similarity_per_turn": 0.945973,
-      "min_turn_similarity": 0.787194,
+      "min_turn_similarity": 0.787195,
       "turn_similarities": [
         1.0,
         1.0,
@@ -6760,7 +6760,7 @@
         0.976709,
         0.9421,
         0.861781,
-        0.787194
+        0.787195
       ],
       "turn_truncated": true
     },
@@ -6853,7 +6853,7 @@
         1.0,
         1.0,
         0.978731,
-        0.993898,
+        0.993897,
         0.919884,
         0.961719,
         0.925348
@@ -7012,14 +7012,14 @@
       "rewritten_tokens": 623,
       "truncated": true,
       "similarity_per_turn": 0.97196,
-      "min_turn_similarity": 0.906973,
+      "min_turn_similarity": 0.906974,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.977102,
-        0.906973,
-        0.918928,
+        0.906974,
+        0.918927,
         0.975566,
         0.997107
       ],
@@ -7130,16 +7130,16 @@
       "rewritten_tokens": 758,
       "truncated": true,
       "similarity_per_turn": 0.956681,
-      "min_turn_similarity": 0.837192,
+      "min_turn_similarity": 0.837191,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.974166,
-        0.967648,
+        0.967649,
         0.933438,
         0.941004,
-        0.837192
+        0.837191
       ],
       "turn_truncated": true
     },
@@ -7177,7 +7177,7 @@
       "rewritten_tokens": 673,
       "truncated": true,
       "similarity_per_turn": 0.953576,
-      "min_turn_similarity": 0.832407,
+      "min_turn_similarity": 0.832408,
       "turn_similarities": [
         1.0,
         1.0,
@@ -7185,7 +7185,7 @@
         0.947344,
         0.978996,
         0.929101,
-        0.832407
+        0.832408
       ],
       "turn_truncated": true
     },
@@ -7208,15 +7208,15 @@
       "rewritten_tokens": 553,
       "truncated": true,
       "similarity_per_turn": 0.87583,
-      "min_turn_similarity": 0.577173,
+      "min_turn_similarity": 0.577174,
       "turn_similarities": [
         1.0,
         1.0,
-        0.991029,
+        0.991028,
         0.93824,
         0.846857,
         0.777513,
-        0.577173
+        0.577174
       ],
       "turn_truncated": true
     },
@@ -7256,7 +7256,7 @@
         0.806554,
         0.80537,
         0.754612,
-        0.887628
+        0.887627
       ],
       "turn_truncated": true
     },
@@ -7276,7 +7276,7 @@
         1.0,
         1.0,
         0.975799,
-        0.925914,
+        0.925915,
         0.768844,
         0.828134,
         0.781008
@@ -7350,14 +7350,14 @@
       "rewritten_tokens": 462,
       "truncated": true,
       "similarity_per_turn": 0.835596,
-      "min_turn_similarity": 0.713008,
+      "min_turn_similarity": 0.713009,
       "turn_similarities": [
         1.0,
         1.0,
         0.857888,
-        0.713008,
+        0.713009,
         0.752509,
-        0.73914,
+        0.739139,
         0.786629
       ],
       "turn_truncated": true
@@ -7380,7 +7380,7 @@
         1.0,
         0.976081,
         0.971444,
-        0.975352,
+        0.975353,
         0.904663,
         0.756179
       ],
@@ -7426,9 +7426,9 @@
         1.0,
         0.953558,
         0.872089,
-        0.658625,
+        0.658624,
         0.706802,
-        0.615195,
+        0.615194,
         0.516086
       ],
       "turn_truncated": true
@@ -7520,7 +7520,7 @@
       "turn_similarities": [
         1.0,
         0.955094,
-        0.956158,
+        0.956157,
         0.919504,
         0.825915,
         0.821764,
@@ -7547,7 +7547,7 @@
         0.992231,
         0.942614,
         0.965624,
-        0.94155,
+        0.941551,
         0.875692,
         0.594938
       ],
@@ -7563,8 +7563,8 @@
       "original_tokens": 705,
       "rewritten_tokens": 675,
       "truncated": true,
-      "similarity_per_turn": 0.960316,
-      "min_turn_similarity": 0.829761,
+      "similarity_per_turn": 0.960315,
+      "min_turn_similarity": 0.82976,
       "turn_similarities": [
         1.0,
         1.0,
@@ -7573,7 +7573,7 @@
         0.978815,
         0.951685,
         0.936929,
-        0.829761
+        0.82976
       ],
       "turn_truncated": true
     },
@@ -7619,7 +7619,7 @@
         1.0,
         0.962016,
         0.777151,
-        0.989601,
+        0.989602,
         0.940884,
         0.8207
       ],
@@ -7649,7 +7649,7 @@
         1.0,
         1.0,
         0.916331,
-        0.94708,
+        0.947079,
         0.898026,
         0.887215,
         0.736433,
@@ -7667,11 +7667,11 @@
       "original_tokens": 700,
       "rewritten_tokens": 677,
       "truncated": true,
-      "similarity_per_turn": 0.878165,
+      "similarity_per_turn": 0.878164,
       "min_turn_similarity": 0.68641,
       "turn_similarities": [
         1.0,
-        0.981994,
+        0.981993,
         0.942844,
         0.857234,
         0.883734,
@@ -7716,7 +7716,7 @@
       "rewritten_tokens": 642,
       "truncated": true,
       "similarity_per_turn": 0.907492,
-      "min_turn_similarity": 0.739419,
+      "min_turn_similarity": 0.73942,
       "turn_similarities": [
         1.0,
         1.0,
@@ -7726,7 +7726,7 @@
         0.932493,
         0.88826,
         0.781672,
-        0.739419
+        0.73942
       ],
       "turn_truncated": true
     },
@@ -7741,16 +7741,16 @@
       "rewritten_tokens": 469,
       "truncated": true,
       "similarity_per_turn": 0.979376,
-      "min_turn_similarity": 0.95131,
+      "min_turn_similarity": 0.951311,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
-        0.952401,
+        0.952402,
         0.977101,
         0.954195,
-        0.95131
+        0.951311
       ],
       "turn_truncated": true
     },
@@ -7793,7 +7793,7 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.815337,
+        0.815336,
         0.872858,
         0.866776,
         0.844308,
@@ -7871,15 +7871,15 @@
       "rewritten_tokens": 503,
       "truncated": true,
       "similarity_per_turn": 0.984474,
-      "min_turn_similarity": 0.942147,
+      "min_turn_similarity": 0.942146,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         1.0,
-        0.949171,
-        0.942147
+        0.949172,
+        0.942146
       ],
       "turn_truncated": true
     },
@@ -7894,15 +7894,15 @@
       "rewritten_tokens": 480,
       "truncated": true,
       "similarity_per_turn": 0.968772,
-      "min_turn_similarity": 0.887016,
+      "min_turn_similarity": 0.887017,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         1.0,
-        0.887016,
-        0.894387
+        0.887017,
+        0.894388
       ],
       "turn_truncated": true
     },
@@ -7972,7 +7972,7 @@
         0.994798,
         0.995017,
         0.962071,
-        0.936893,
+        0.936892,
         0.93602
       ],
       "turn_truncated": true
@@ -8041,7 +8041,7 @@
         1.0,
         1.0,
         0.762214,
-        0.861889,
+        0.86189,
         0.840632,
         0.802094,
         0.784153
@@ -8176,14 +8176,14 @@
       "original_tokens": 558,
       "rewritten_tokens": 561,
       "truncated": true,
-      "similarity_per_turn": 0.972989,
+      "similarity_per_turn": 0.97299,
       "min_turn_similarity": 0.895948,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
-        0.975455,
+        0.975454,
         0.895948,
         0.939524
       ],
@@ -8247,15 +8247,15 @@
       "rewritten_tokens": 385,
       "truncated": true,
       "similarity_per_turn": 0.91506,
-      "min_turn_similarity": 0.771928,
+      "min_turn_similarity": 0.771927,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.935154,
-        0.820881,
-        0.877459,
-        0.771928
+        0.82088,
+        0.87746,
+        0.771927
       ],
       "turn_truncated": true
     },
@@ -8293,7 +8293,7 @@
       "original_tokens": 481,
       "rewritten_tokens": 486,
       "truncated": true,
-      "similarity_per_turn": 0.986309,
+      "similarity_per_turn": 0.986308,
       "min_turn_similarity": 0.90416,
       "turn_similarities": [
         1.0,
@@ -8324,7 +8324,7 @@
         0.978475,
         0.740363,
         0.903314,
-        0.808667,
+        0.808668,
         0.754587,
         0.753916
       ],
@@ -8347,7 +8347,7 @@
         1.0,
         1.0,
         0.911392,
-        0.842633,
+        0.842632,
         0.926854,
         0.914906,
         0.723287
@@ -8372,7 +8372,7 @@
         1.0,
         0.90598,
         0.94338,
-        0.936409,
+        0.93641,
         0.977721,
         0.957393
       ],
@@ -8484,7 +8484,7 @@
         1.0,
         1.0,
         1.0,
-        0.957473,
+        0.957474,
         0.84776,
         0.726626
       ],
@@ -8690,7 +8690,7 @@
       "rewritten_tokens": 560,
       "truncated": true,
       "similarity_per_turn": 0.960427,
-      "min_turn_similarity": 0.916359,
+      "min_turn_similarity": 0.91636,
       "turn_similarities": [
         1.0,
         1.0,
@@ -8698,7 +8698,7 @@
         0.9845,
         0.94836,
         0.917223,
-        0.916359,
+        0.91636,
         0.916973
       ],
       "turn_truncated": true
@@ -8766,11 +8766,11 @@
         1.0,
         0.613539,
         0.597833,
-        0.61965,
+        0.619649,
         0.569443,
-        0.577156,
+        0.577155,
         0.55077,
-        0.580677,
+        0.580676,
         0.435287
       ],
       "turn_truncated": true
@@ -8818,7 +8818,7 @@
         0.981978,
         0.975822,
         0.983618,
-        0.972444,
+        0.972443,
         0.96568
       ],
       "turn_truncated": true
@@ -8957,7 +8957,7 @@
         1.0,
         1.0,
         0.914841,
-        0.777091,
+        0.77709,
         0.748297,
         0.801159
       ],
@@ -8997,15 +8997,15 @@
       "rewritten_tokens": 760,
       "truncated": true,
       "similarity_per_turn": 0.987434,
-      "min_turn_similarity": 0.957407,
+      "min_turn_similarity": 0.957408,
       "turn_similarities": [
         1.0,
         0.985577,
         0.995276,
         0.994461,
         0.996323,
-        0.989336,
-        0.957407,
+        0.989335,
+        0.957408,
         0.98109
       ],
       "turn_truncated": true
@@ -9118,7 +9118,7 @@
       "turn_similarities": [
         1.0,
         0.861251,
-        0.922477,
+        0.922476,
         0.894211,
         0.830408,
         0.826314,
@@ -9313,13 +9313,13 @@
       "rewritten_tokens": 593,
       "truncated": true,
       "similarity_per_turn": 0.938342,
-      "min_turn_similarity": 0.888483,
+      "min_turn_similarity": 0.888482,
       "turn_similarities": [
         1.0,
         0.989276,
-        0.888483,
+        0.888482,
         0.895131,
-        0.932026,
+        0.932025,
         0.931378,
         0.932099
       ],
@@ -9415,7 +9415,7 @@
         0.921406,
         0.967761,
         0.893137,
-        0.922841
+        0.92284
       ],
       "turn_truncated": true
     },
@@ -9460,7 +9460,7 @@
         1.0,
         1.0,
         1.0,
-        0.963056,
+        0.963057,
         0.954621,
         0.852119,
         0.832679
@@ -9549,16 +9549,16 @@
       "rewritten_tokens": 456,
       "truncated": true,
       "similarity_per_turn": 0.947066,
-      "min_turn_similarity": 0.697857,
+      "min_turn_similarity": 0.697858,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         0.98523,
-        0.960587,
+        0.960588,
         0.93285,
-        0.697857
+        0.697858
       ],
       "turn_truncated": true
     },
@@ -9573,14 +9573,14 @@
       "rewritten_tokens": 418,
       "truncated": true,
       "similarity_per_turn": 0.977211,
-      "min_turn_similarity": 0.911227,
+      "min_turn_similarity": 0.911228,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         0.934907,
-        0.911227,
+        0.911228,
         0.994339
       ],
       "turn_truncated": true
@@ -9624,12 +9624,12 @@
       "turn_similarities": [
         1.0,
         0.940145,
-        0.934489,
+        0.934488,
         0.890427,
         0.902704,
         0.942465,
         0.953451,
-        0.924227
+        0.924226
       ],
       "turn_truncated": true
     },
@@ -9650,7 +9650,7 @@
         1.0,
         1.0,
         0.992347,
-        0.976209,
+        0.976208,
         0.951556,
         0.960266,
         0.943998
@@ -9692,16 +9692,16 @@
       "rewritten_tokens": 480,
       "truncated": true,
       "similarity_per_turn": 0.952857,
-      "min_turn_similarity": 0.894504,
+      "min_turn_similarity": 0.894505,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.958939,
-        0.894663,
+        0.894662,
         0.914216,
-        0.894504,
-        0.960531
+        0.894505,
+        0.96053
       ],
       "turn_truncated": true
     },
@@ -9745,7 +9745,7 @@
         1.0,
         1.0,
         0.941148,
-        0.980137,
+        0.980136,
         0.946843,
         0.920013,
         0.790953
@@ -9974,16 +9974,16 @@
       "rewritten_tokens": 658,
       "truncated": true,
       "similarity_per_turn": 0.980732,
-      "min_turn_similarity": 0.940387,
+      "min_turn_similarity": 0.940388,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
-        0.975079,
+        0.975078,
         0.977081,
         0.953312,
-        0.940387
+        0.940388
       ],
       "turn_truncated": true
     },
@@ -10150,7 +10150,7 @@
         1.0,
         0.864305,
         0.803553,
-        0.827636
+        0.827637
       ],
       "turn_truncated": true
     },
@@ -10188,16 +10188,16 @@
       "rewritten_tokens": 629,
       "truncated": true,
       "similarity_per_turn": 0.891138,
-      "min_turn_similarity": 0.738781,
+      "min_turn_similarity": 0.73878,
       "turn_similarities": [
         1.0,
         1.0,
         0.98584,
         0.87481,
-        0.738781,
-        0.901769,
+        0.73878,
+        0.90177,
         0.886716,
-        0.741192
+        0.741191
       ],
       "turn_truncated": true
     },
@@ -10221,7 +10221,7 @@
         1.0,
         0.984095,
         0.913973,
-        0.956956
+        0.956957
       ],
       "turn_truncated": true
     },
@@ -10333,7 +10333,7 @@
       "min_turn_similarity": 0.8354,
       "turn_similarities": [
         1.0,
-        0.980828,
+        0.980829,
         0.975338,
         0.985593,
         0.909996,
@@ -10448,12 +10448,12 @@
       "rewritten_tokens": 855,
       "truncated": true,
       "similarity_per_turn": 0.982661,
-      "min_turn_similarity": 0.94797,
+      "min_turn_similarity": 0.947971,
       "turn_similarities": [
         1.0,
         1.0,
         0.975313,
-        0.94797,
+        0.947971,
         0.948195,
         1.0,
         0.989813,
@@ -10472,13 +10472,13 @@
       "rewritten_tokens": 824,
       "truncated": true,
       "similarity_per_turn": 0.919296,
-      "min_turn_similarity": 0.856206,
+      "min_turn_similarity": 0.856207,
       "turn_similarities": [
         1.0,
         0.961183,
         0.964192,
         0.884157,
-        0.856206,
+        0.856207,
         0.892325,
         0.877007
       ],
@@ -10525,7 +10525,7 @@
         1.0,
         0.979254,
         0.983812,
-        0.959053,
+        0.959052,
         0.934304
       ],
       "turn_truncated": true
@@ -10572,7 +10572,7 @@
         1.0,
         1.0,
         0.974828,
-        0.908319,
+        0.90832,
         0.846943,
         0.78989
       ],
@@ -10666,7 +10666,7 @@
         1.0,
         1.0,
         0.852127,
-        0.976268,
+        0.976267,
         0.95935,
         0.936248,
         0.89582
@@ -10756,14 +10756,14 @@
       "rewritten_tokens": 577,
       "truncated": true,
       "similarity_per_turn": 0.940142,
-      "min_turn_similarity": 0.865733,
+      "min_turn_similarity": 0.865734,
       "turn_similarities": [
         1.0,
         0.969539,
         0.953546,
         0.957774,
         0.958294,
-        0.865733,
+        0.865734,
         0.90189,
         0.914362
       ],
@@ -10834,7 +10834,7 @@
         1.0,
         1.0,
         0.979563,
-        0.815087,
+        0.815086,
         0.902991,
         0.784946
       ],
@@ -10887,7 +10887,7 @@
       "turn_similarities": [
         1.0,
         0.980443,
-        0.983266,
+        0.983267,
         0.95679,
         0.902297,
         0.915042,
@@ -11039,7 +11039,7 @@
         1.0,
         1.0,
         0.964053,
-        0.908726,
+        0.908727,
         0.927842,
         0.824969,
         0.851273
@@ -11106,14 +11106,14 @@
       "similarity_per_turn": 0.93889,
       "min_turn_similarity": 0.904286,
       "turn_similarities": [
-        0.974299,
+        0.9743,
         0.986704,
         0.968939,
         0.941858,
         0.904286,
         0.913468,
         0.904928,
-        0.916637
+        0.916636
       ],
       "turn_truncated": true
     },
@@ -11133,7 +11133,7 @@
         1.0,
         1.0,
         0.990122,
-        0.948168,
+        0.948169,
         0.959911,
         0.868098,
         0.808974
@@ -11151,7 +11151,7 @@
       "rewritten_tokens": 646,
       "truncated": true,
       "similarity_per_turn": 0.954085,
-      "min_turn_similarity": 0.905021,
+      "min_turn_similarity": 0.90502,
       "turn_similarities": [
         1.0,
         0.970597,
@@ -11160,7 +11160,7 @@
         0.966164,
         0.923753,
         0.944495,
-        0.905021
+        0.90502
       ],
       "turn_truncated": true
     },
@@ -11180,7 +11180,7 @@
         1.0,
         1.0,
         1.0,
-        0.905878,
+        0.905879,
         0.780704,
         0.831295,
         0.719994,
@@ -11228,11 +11228,11 @@
         1.0,
         1.0,
         0.989213,
-        0.955197,
+        0.955196,
         0.923381,
         0.845889,
         0.776121,
-        0.804148
+        0.804149
       ],
       "turn_truncated": true
     },
@@ -11300,9 +11300,9 @@
         0.975429,
         0.971093,
         0.847868,
-        0.838518,
+        0.838517,
         0.887075,
-        0.723299,
+        0.7233,
         0.599415
       ],
       "turn_truncated": true
@@ -11345,7 +11345,7 @@
       "min_turn_similarity": 0.884275,
       "turn_similarities": [
         1.0,
-        0.976648,
+        0.976647,
         1.0,
         1.0,
         0.97204,
@@ -11398,7 +11398,7 @@
         0.945625,
         0.906028,
         0.895337,
-        0.896828
+        0.896827
       ],
       "turn_truncated": true
     },
@@ -11458,8 +11458,8 @@
       "original_tokens": 677,
       "rewritten_tokens": 673,
       "truncated": true,
-      "similarity_per_turn": 0.962717,
-      "min_turn_similarity": 0.84897,
+      "similarity_per_turn": 0.962718,
+      "min_turn_similarity": 0.848971,
       "turn_similarities": [
         1.0,
         1.0,
@@ -11467,7 +11467,7 @@
         0.973785,
         0.994573,
         0.974148,
-        0.84897,
+        0.848971,
         0.916544
       ],
       "turn_truncated": true
@@ -11554,7 +11554,7 @@
       "original_tokens": 502,
       "rewritten_tokens": 494,
       "truncated": true,
-      "similarity_per_turn": 0.914046,
+      "similarity_per_turn": 0.914045,
       "min_turn_similarity": 0.808271,
       "turn_similarities": [
         1.0,
@@ -11564,7 +11564,7 @@
         0.908706,
         0.872088,
         0.808271,
-        0.92742
+        0.927419
       ],
       "turn_truncated": true
     },
@@ -11609,7 +11609,7 @@
         1.0,
         1.0,
         0.953426,
-        0.932174,
+        0.932173,
         0.886184,
         0.91437
       ],
@@ -11632,7 +11632,7 @@
         1.0,
         1.0,
         0.98296,
-        0.956833,
+        0.956832,
         0.945369,
         0.93198,
         0.845692,
@@ -11656,7 +11656,7 @@
         1.0,
         1.0,
         1.0,
-        0.978953,
+        0.978952,
         0.926411,
         0.977771,
         0.928789,
@@ -11675,7 +11675,7 @@
       "rewritten_tokens": 1001,
       "truncated": true,
       "similarity_per_turn": 0.894987,
-      "min_turn_similarity": 0.691442,
+      "min_turn_similarity": 0.691443,
       "turn_similarities": [
         1.0,
         0.959691,
@@ -11684,7 +11684,7 @@
         0.947796,
         0.950221,
         0.713981,
-        0.691442
+        0.691443
       ],
       "turn_truncated": true
     },
@@ -11729,9 +11729,9 @@
         1.0,
         1.0,
         0.985575,
-        0.933953,
+        0.933954,
         0.885617,
-        0.922542,
+        0.922541,
         0.917989
       ],
       "turn_truncated": true
@@ -11802,7 +11802,7 @@
         1.0,
         0.974856,
         0.935834,
-        0.944517,
+        0.944518,
         0.935064
       ],
       "turn_truncated": true
@@ -11826,7 +11826,7 @@
         0.981373,
         0.990925,
         0.938536,
-        0.953575,
+        0.953576,
         0.858888
       ],
       "turn_truncated": true
@@ -11859,7 +11859,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "violence",
-      "similarity": 0.988066,
+      "similarity": 0.988067,
       "num_turns_scored": 8,
       "original_tokens": 562,
       "rewritten_tokens": 551,
@@ -11872,7 +11872,7 @@
         0.966318,
         0.869651,
         0.835276,
-        0.855996,
+        0.855997,
         0.679055,
         0.813317
       ],
@@ -11912,16 +11912,16 @@
       "rewritten_tokens": 531,
       "truncated": true,
       "similarity_per_turn": 0.940563,
-      "min_turn_similarity": 0.80378,
+      "min_turn_similarity": 0.803779,
       "turn_similarities": [
         1.0,
         1.0,
         0.98934,
         0.971531,
-        0.973542,
+        0.973543,
         0.904685,
         0.881623,
-        0.80378
+        0.803779
       ],
       "turn_truncated": true
     },
@@ -11930,7 +11930,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.996171,
+      "similarity": 0.996172,
       "num_turns_scored": 8,
       "original_tokens": 710,
       "rewritten_tokens": 659,
@@ -11944,7 +11944,7 @@
         0.909814,
         0.861151,
         0.882718,
-        0.753795,
+        0.753794,
         0.661728
       ],
       "turn_truncated": true
@@ -11983,13 +11983,13 @@
       "rewritten_tokens": 554,
       "truncated": true,
       "similarity_per_turn": 0.965238,
-      "min_turn_similarity": 0.891244,
+      "min_turn_similarity": 0.891245,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
-        0.891244,
+        0.891245,
         0.953799,
         0.911622
       ],
@@ -12011,8 +12011,8 @@
         0.768126,
         0.821178,
         0.846416,
-        0.830653,
-        0.841205,
+        0.830652,
+        0.841206,
         0.810655,
         0.813665,
         0.818267
@@ -12030,16 +12030,16 @@
       "rewritten_tokens": 655,
       "truncated": true,
       "similarity_per_turn": 0.953926,
-      "min_turn_similarity": 0.888844,
+      "min_turn_similarity": 0.888845,
       "turn_similarities": [
         1.0,
         0.990021,
         0.98234,
         0.936156,
-        0.940995,
+        0.940994,
         0.957572,
         0.935481,
-        0.888844
+        0.888845
       ],
       "turn_truncated": true
     },
@@ -12086,7 +12086,7 @@
         0.990003,
         0.881664,
         0.933606,
-        0.886652,
+        0.886653,
         0.785138
       ],
       "turn_truncated": true
@@ -12295,7 +12295,7 @@
       "turn_similarities": [
         0.984133,
         0.984786,
-        0.965227,
+        0.965228,
         0.965761,
         0.93193,
         0.890765,
@@ -12347,7 +12347,7 @@
         0.814922,
         0.962548,
         0.952556,
-        0.913241
+        0.913242
       ],
       "turn_truncated": true
     },
@@ -12362,7 +12362,7 @@
       "rewritten_tokens": 424,
       "truncated": true,
       "similarity_per_turn": 0.982168,
-      "min_turn_similarity": 0.93103,
+      "min_turn_similarity": 0.931031,
       "turn_similarities": [
         1.0,
         1.0,
@@ -12370,7 +12370,7 @@
         1.0,
         0.982062,
         0.962081,
-        0.93103
+        0.931031
       ],
       "turn_truncated": true
     },
@@ -12415,7 +12415,7 @@
         1.0,
         1.0,
         1.0,
-        0.988809,
+        0.988808,
         0.930671,
         0.803125
       ],
@@ -12601,7 +12601,7 @@
       "min_turn_similarity": 0.566397,
       "turn_similarities": [
         0.956572,
-        0.950952,
+        0.950953,
         0.85248,
         0.801664,
         0.634616,
@@ -12629,7 +12629,7 @@
         0.97142,
         0.951523,
         0.944221,
-        0.815119,
+        0.815118,
         0.796
       ],
       "turn_truncated": true
@@ -12644,7 +12644,7 @@
       "original_tokens": 436,
       "rewritten_tokens": 444,
       "truncated": true,
-      "similarity_per_turn": 0.976976,
+      "similarity_per_turn": 0.976977,
       "min_turn_similarity": 0.896218,
       "turn_similarities": [
         1.0,
@@ -12770,7 +12770,7 @@
       "rewritten_tokens": 607,
       "truncated": true,
       "similarity_per_turn": 0.976874,
-      "min_turn_similarity": 0.902528,
+      "min_turn_similarity": 0.902529,
       "turn_similarities": [
         1.0,
         1.0,
@@ -12779,7 +12779,7 @@
         1.0,
         0.972932,
         0.939533,
-        0.902528
+        0.902529
       ],
       "turn_truncated": true
     },
@@ -12826,7 +12826,7 @@
         0.868988,
         0.901682,
         0.863744,
-        0.864856
+        0.864855
       ],
       "turn_truncated": true
     },
@@ -12966,7 +12966,7 @@
         0.95257,
         0.95464,
         0.976778,
-        0.924214,
+        0.924213,
         0.87392
       ],
       "turn_truncated": true
@@ -13004,7 +13004,7 @@
       "original_tokens": 700,
       "rewritten_tokens": 678,
       "truncated": true,
-      "similarity_per_turn": 0.925964,
+      "similarity_per_turn": 0.925965,
       "min_turn_similarity": 0.838975,
       "turn_similarities": [
         1.0,
@@ -13034,9 +13034,9 @@
         1.0,
         1.0,
         1.0,
-        0.905457,
+        0.905456,
         0.862779,
-        0.811834,
+        0.811835,
         0.856378,
         0.742219
       ],
@@ -13053,15 +13053,15 @@
       "rewritten_tokens": 547,
       "truncated": true,
       "similarity_per_turn": 0.950037,
-      "min_turn_similarity": 0.803534,
+      "min_turn_similarity": 0.803535,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.982208,
         0.908778,
-        0.955741,
-        0.803534
+        0.955742,
+        0.803535
       ],
       "turn_truncated": true
     },
@@ -13075,14 +13075,14 @@
       "original_tokens": 780,
       "rewritten_tokens": 747,
       "truncated": true,
-      "similarity_per_turn": 0.870664,
+      "similarity_per_turn": 0.870665,
       "min_turn_similarity": 0.716302,
       "turn_similarities": [
         1.0,
         0.942583,
-        0.831846,
+        0.831845,
         0.897229,
-        0.839731,
+        0.839732,
         0.862395,
         0.716302,
         0.875231
@@ -13219,12 +13219,12 @@
       "rewritten_tokens": 472,
       "truncated": true,
       "similarity_per_turn": 0.923649,
-      "min_turn_similarity": 0.795998,
+      "min_turn_similarity": 0.795997,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
-        0.795998,
+        0.795997,
         0.839906,
         0.889218,
         0.940423
@@ -13390,7 +13390,7 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.858745,
+        0.858746,
         0.783913,
         0.777241,
         0.812344,
@@ -13506,14 +13506,14 @@
       "rewritten_tokens": 779,
       "truncated": true,
       "similarity_per_turn": 0.93904,
-      "min_turn_similarity": 0.841658,
+      "min_turn_similarity": 0.841659,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.971213,
         0.850558,
-        0.841658,
+        0.841659,
         0.918132,
         0.930758
       ],
@@ -13533,13 +13533,13 @@
       "min_turn_similarity": 0.799438,
       "turn_similarities": [
         0.947273,
-        0.950195,
+        0.950194,
         0.917457,
         0.813407,
-        0.864154,
+        0.864155,
         0.799438,
         0.833322,
-        0.848331
+        0.84833
       ],
       "turn_truncated": true
     },
@@ -13553,7 +13553,7 @@
       "original_tokens": 636,
       "rewritten_tokens": 616,
       "truncated": true,
-      "similarity_per_turn": 0.936905,
+      "similarity_per_turn": 0.936906,
       "min_turn_similarity": 0.868464,
       "turn_similarities": [
         1.0,
@@ -13626,11 +13626,11 @@
       "rewritten_tokens": 564,
       "truncated": true,
       "similarity_per_turn": 0.893269,
-      "min_turn_similarity": 0.818202,
+      "min_turn_similarity": 0.818201,
       "turn_similarities": [
         1.0,
         0.922568,
-        0.818202,
+        0.818201,
         0.831281,
         0.82682,
         0.9011,
@@ -13735,8 +13735,8 @@
         1.0,
         0.981446,
         0.93125,
-        0.860658,
-        0.849129,
+        0.860659,
+        0.849128,
         0.87989,
         0.8183
       ],
@@ -13762,7 +13762,7 @@
         0.982246,
         0.904119,
         0.932828,
-        0.922185
+        0.922186
       ],
       "turn_truncated": true
     },
@@ -13925,7 +13925,7 @@
         0.723495,
         0.706173,
         0.771446,
-        0.668129,
+        0.668128,
         0.455868,
         0.6669,
         0.780561
@@ -14002,7 +14002,7 @@
       "turn_similarities": [
         1.0,
         0.99214,
-        0.96373,
+        0.963731,
         0.954756,
         0.949718,
         0.95684,
@@ -14022,7 +14022,7 @@
       "rewritten_tokens": 475,
       "truncated": true,
       "similarity_per_turn": 0.950788,
-      "min_turn_similarity": 0.78303,
+      "min_turn_similarity": 0.783031,
       "turn_similarities": [
         1.0,
         1.0,
@@ -14031,7 +14031,7 @@
         1.0,
         0.937309,
         0.885964,
-        0.78303
+        0.783031
       ],
       "turn_truncated": true
     },
@@ -14070,7 +14070,7 @@
       "original_tokens": 429,
       "rewritten_tokens": 440,
       "truncated": true,
-      "similarity_per_turn": 0.937015,
+      "similarity_per_turn": 0.937014,
       "min_turn_similarity": 0.707837,
       "turn_similarities": [
         1.0,
@@ -14078,7 +14078,7 @@
         1.0,
         1.0,
         0.947049,
-        0.87001,
+        0.870009,
         0.707837,
         0.97122
       ],
@@ -14268,7 +14268,7 @@
         1.0,
         0.920173,
         0.952729,
-        0.960348,
+        0.960347,
         0.844166
       ],
       "turn_truncated": true
@@ -14311,7 +14311,7 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.955233,
+        0.955232,
         0.851273,
         0.901988,
         0.88657,
@@ -14448,7 +14448,7 @@
       "rewritten_tokens": 542,
       "truncated": true,
       "similarity_per_turn": 0.921737,
-      "min_turn_similarity": 0.762398,
+      "min_turn_similarity": 0.762397,
       "turn_similarities": [
         1.0,
         1.0,
@@ -14456,7 +14456,7 @@
         0.911647,
         0.915261,
         0.862854,
-        0.762398
+        0.762397
       ],
       "turn_truncated": true
     },
@@ -14519,7 +14519,7 @@
       "rewritten_tokens": 625,
       "truncated": true,
       "similarity_per_turn": 0.939571,
-      "min_turn_similarity": 0.800172,
+      "min_turn_similarity": 0.800173,
       "turn_similarities": [
         1.0,
         1.0,
@@ -14527,7 +14527,7 @@
         1.0,
         0.95833,
         0.944771,
-        0.800172,
+        0.800173,
         0.813294
       ],
       "turn_truncated": true
@@ -14598,7 +14598,7 @@
         1.0,
         1.0,
         0.905905,
-        0.9569
+        0.956901
       ],
       "turn_truncated": true
     },
@@ -14636,7 +14636,7 @@
       "rewritten_tokens": 609,
       "truncated": true,
       "similarity_per_turn": 0.972506,
-      "min_turn_similarity": 0.838817,
+      "min_turn_similarity": 0.838816,
       "turn_similarities": [
         1.0,
         1.0,
@@ -14645,7 +14645,7 @@
         1.0,
         0.985162,
         0.956074,
-        0.838817
+        0.838816
       ],
       "turn_truncated": true
     },
@@ -14999,7 +14999,7 @@
         1.0,
         0.989387,
         0.861268,
-        0.947852,
+        0.947851,
         0.887606,
         0.726186
       ],
@@ -15157,14 +15157,14 @@
       "rewritten_tokens": 589,
       "truncated": true,
       "similarity_per_turn": 0.954463,
-      "min_turn_similarity": 0.908287,
+      "min_turn_similarity": 0.908288,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.965719,
         0.939505,
-        0.908287,
+        0.908288,
         0.911473,
         0.910721
       ],
@@ -15300,14 +15300,14 @@
       "original_tokens": 556,
       "rewritten_tokens": 561,
       "truncated": true,
-      "similarity_per_turn": 0.940884,
+      "similarity_per_turn": 0.940883,
       "min_turn_similarity": 0.813345,
       "turn_similarities": [
         1.0,
         1.0,
         0.813345,
         0.949826,
-        0.950409,
+        0.95041,
         0.941833,
         0.930771
       ],
@@ -15380,7 +15380,7 @@
         0.893992,
         0.910327,
         0.962428,
-        0.96343
+        0.963429
       ],
       "turn_truncated": true
     },
@@ -15450,7 +15450,7 @@
         1.0,
         0.975253,
         0.94484,
-        0.854266,
+        0.854267,
         0.891656,
         0.820753
       ],
@@ -15540,7 +15540,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.976011,
+      "similarity": 0.976012,
       "num_turns_scored": 7,
       "original_tokens": 669,
       "rewritten_tokens": 662,
@@ -15884,7 +15884,7 @@
         1.0,
         0.960859,
         0.869976,
-        0.970043,
+        0.970044,
         0.961856
       ],
       "turn_truncated": true
@@ -15970,13 +15970,13 @@
       "rewritten_tokens": 570,
       "truncated": true,
       "similarity_per_turn": 0.829028,
-      "min_turn_similarity": 0.541744,
+      "min_turn_similarity": 0.541745,
       "turn_similarities": [
         1.0,
         0.945899,
         0.89047,
         0.890531,
-        0.541744,
+        0.541745,
         0.774681,
         0.759874
       ],
@@ -15996,7 +15996,7 @@
       "min_turn_similarity": 0.692623,
       "turn_similarities": [
         0.975738,
-        0.756705,
+        0.756704,
         0.767804,
         0.727132,
         0.721706,
@@ -16112,7 +16112,7 @@
       "rewritten_tokens": 646,
       "truncated": true,
       "similarity_per_turn": 0.973437,
-      "min_turn_similarity": 0.84986,
+      "min_turn_similarity": 0.849861,
       "turn_similarities": [
         1.0,
         1.0,
@@ -16121,7 +16121,7 @@
         1.0,
         0.976583,
         0.961053,
-        0.84986
+        0.849861
       ],
       "turn_truncated": true
     },
@@ -16222,7 +16222,7 @@
         1.0,
         1.0,
         0.951147,
-        0.968668,
+        0.968669,
         0.815616,
         0.887295,
         0.825658
@@ -16349,7 +16349,7 @@
         1.0,
         1.0,
         1.0,
-        0.890194,
+        0.890193,
         0.798631,
         0.878248,
         0.810595,
@@ -16368,7 +16368,7 @@
       "rewritten_tokens": 364,
       "truncated": true,
       "similarity_per_turn": 0.955379,
-      "min_turn_similarity": 0.894979,
+      "min_turn_similarity": 0.894978,
       "turn_similarities": [
         1.0,
         1.0,
@@ -16376,7 +16376,7 @@
         0.955712,
         0.911523,
         0.925439,
-        0.894979
+        0.894978
       ],
       "turn_truncated": true
     },
@@ -16446,7 +16446,7 @@
         1.0,
         0.950069,
         0.96503,
-        0.960375,
+        0.960376,
         0.96684
       ],
       "turn_truncated": true
@@ -16462,7 +16462,7 @@
       "rewritten_tokens": 512,
       "truncated": true,
       "similarity_per_turn": 0.962971,
-      "min_turn_similarity": 0.866988,
+      "min_turn_similarity": 0.866989,
       "turn_similarities": [
         1.0,
         1.0,
@@ -16470,7 +16470,7 @@
         1.0,
         0.942044,
         0.931764,
-        0.866988
+        0.866989
       ],
       "turn_truncated": true
     },
@@ -16516,7 +16516,7 @@
         1.0,
         0.99612,
         0.997385,
-        0.98518,
+        0.985181,
         0.910735
       ],
       "turn_truncated": true
@@ -16532,7 +16532,7 @@
       "rewritten_tokens": 637,
       "truncated": true,
       "similarity_per_turn": 0.946994,
-      "min_turn_similarity": 0.845521,
+      "min_turn_similarity": 0.845522,
       "turn_similarities": [
         1.0,
         1.0,
@@ -16540,7 +16540,7 @@
         0.958444,
         0.922711,
         0.94998,
-        0.845521,
+        0.845522,
         0.899299
       ],
       "turn_truncated": true
@@ -16801,7 +16801,7 @@
         0.990579,
         0.989903,
         0.968308,
-        0.923538,
+        0.923539,
         0.801357
       ],
       "turn_truncated": true
@@ -16822,7 +16822,7 @@
         0.858204,
         0.702147,
         0.845912,
-        0.795799,
+        0.7958,
         0.750039,
         0.878738,
         0.934914,
@@ -16841,16 +16841,16 @@
       "rewritten_tokens": 550,
       "truncated": true,
       "similarity_per_turn": 0.928224,
-      "min_turn_similarity": 0.877,
+      "min_turn_similarity": 0.877001,
       "turn_similarities": [
         1.0,
         1.0,
         0.918375,
-        0.935063,
+        0.935064,
         0.905638,
         0.908133,
         0.881585,
-        0.877
+        0.877001
       ],
       "turn_truncated": true
     },
@@ -16870,10 +16870,10 @@
         1.0,
         1.0,
         0.988583,
-        0.860125,
+        0.860126,
         0.767791,
         0.896887,
-        0.706761,
+        0.70676,
         0.669345
       ],
       "turn_truncated": true
@@ -16896,7 +16896,7 @@
         1.0,
         0.968365,
         0.884502,
-        0.778933,
+        0.778932,
         0.708035
       ],
       "turn_truncated": true
@@ -16951,7 +16951,7 @@
         1.0,
         0.902063,
         0.892996,
-        0.8345,
+        0.834501,
         0.831284
       ],
       "turn_truncated": true
@@ -16966,7 +16966,7 @@
       "original_tokens": 611,
       "rewritten_tokens": 604,
       "truncated": true,
-      "similarity_per_turn": 0.994317,
+      "similarity_per_turn": 0.994318,
       "min_turn_similarity": 0.960222,
       "turn_similarities": [
         1.0,
@@ -17043,7 +17043,7 @@
         0.948489,
         0.911287,
         0.924846,
-        0.847734,
+        0.847735,
         0.788896,
         0.898973
       ],
@@ -17165,7 +17165,7 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.967325,
+        0.967326,
         0.894112,
         0.825266,
         0.808451,
@@ -17262,7 +17262,7 @@
         1.0,
         1.0,
         0.955814,
-        0.919968,
+        0.919967,
         0.865817,
         0.847175,
         0.772528
@@ -17357,9 +17357,9 @@
         1.0,
         1.0,
         0.983953,
-        0.916666,
+        0.916667,
         0.844614,
-        0.894979
+        0.894978
       ],
       "turn_truncated": true
     },
@@ -17379,7 +17379,7 @@
         1.0,
         1.0,
         1.0,
-        0.969183,
+        0.969182,
         0.924721,
         0.902054,
         0.851458,
@@ -17469,7 +17469,7 @@
       "original_tokens": 465,
       "rewritten_tokens": 474,
       "truncated": true,
-      "similarity_per_turn": 0.967526,
+      "similarity_per_turn": 0.967527,
       "min_turn_similarity": 0.892081,
       "turn_similarities": [
         1.0,
@@ -17517,7 +17517,7 @@
       "rewritten_tokens": 835,
       "truncated": true,
       "similarity_per_turn": 0.939984,
-      "min_turn_similarity": 0.890669,
+      "min_turn_similarity": 0.890668,
       "turn_similarities": [
         1.0,
         0.974135,
@@ -17525,7 +17525,7 @@
         0.944311,
         0.915205,
         0.913829,
-        0.890669
+        0.890668
       ],
       "turn_truncated": true
     },
@@ -17540,17 +17540,17 @@
       "rewritten_tokens": 573,
       "truncated": true,
       "similarity_per_turn": 0.893225,
-      "min_turn_similarity": 0.778298,
+      "min_turn_similarity": 0.778297,
       "turn_similarities": [
         1.0,
         0.990148,
-        0.971662,
+        0.971661,
         0.927302,
-        0.87096,
+        0.870959,
         0.866781,
         0.794094,
         0.839785,
-        0.778298
+        0.778297
       ],
       "turn_truncated": true
     },
@@ -17612,13 +17612,13 @@
       "rewritten_tokens": 476,
       "truncated": true,
       "similarity_per_turn": 0.931961,
-      "min_turn_similarity": 0.823009,
+      "min_turn_similarity": 0.82301,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.944969,
-        0.823009,
+        0.82301,
         0.888582,
         0.867164
       ],
@@ -17666,7 +17666,7 @@
         1.0,
         0.967407,
         0.852127,
-        0.880278,
+        0.880279,
         0.8428,
         0.839302
       ],
@@ -17686,7 +17686,7 @@
       "min_turn_similarity": 0.848482,
       "turn_similarities": [
         1.0,
-        0.85581,
+        0.855811,
         0.848482,
         0.882665,
         0.868756,
@@ -17706,7 +17706,7 @@
       "original_tokens": 775,
       "rewritten_tokens": 775,
       "truncated": true,
-      "similarity_per_turn": 0.94232,
+      "similarity_per_turn": 0.942321,
       "min_turn_similarity": 0.76109,
       "turn_similarities": [
         1.0,
@@ -17759,7 +17759,7 @@
         1.0,
         1.0,
         1.0,
-        0.977025,
+        0.977026,
         0.917993,
         0.870551,
         0.907837,
@@ -17825,7 +17825,7 @@
       "rewritten_tokens": 593,
       "truncated": true,
       "similarity_per_turn": 0.961898,
-      "min_turn_similarity": 0.893898,
+      "min_turn_similarity": 0.893897,
       "turn_similarities": [
         1.0,
         1.0,
@@ -17833,7 +17833,7 @@
         0.965334,
         0.970395,
         0.90366,
-        0.893898
+        0.893897
       ],
       "turn_truncated": true
     },
@@ -17852,8 +17852,8 @@
       "turn_similarities": [
         1.0,
         1.0,
-        0.964053,
-        0.936811,
+        0.964052,
+        0.936812,
         0.915287,
         0.904742,
         0.758627
@@ -17879,7 +17879,7 @@
         1.0,
         0.965483,
         0.878118,
-        0.913309
+        0.913308
       ],
       "turn_truncated": true
     },
@@ -17925,7 +17925,7 @@
         0.929034,
         0.911343,
         0.927581,
-        0.906232,
+        0.906233,
         0.84025
       ],
       "turn_truncated": true
@@ -18206,9 +18206,9 @@
         1.0,
         0.987658,
         0.93272,
-        0.883543,
+        0.883542,
         0.806901,
-        0.880142,
+        0.880141,
         0.907756
       ],
       "turn_truncated": true
@@ -18224,14 +18224,14 @@
       "rewritten_tokens": 537,
       "truncated": true,
       "similarity_per_turn": 0.841962,
-      "min_turn_similarity": 0.593793,
+      "min_turn_similarity": 0.593794,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
-        0.889175,
+        0.889174,
         0.706253,
-        0.593793,
+        0.593794,
         0.704513
       ],
       "turn_truncated": true
@@ -18247,15 +18247,15 @@
       "rewritten_tokens": 411,
       "truncated": true,
       "similarity_per_turn": 0.930089,
-      "min_turn_similarity": 0.740321,
+      "min_turn_similarity": 0.740322,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         1.0,
-        0.740321,
-        0.770299
+        0.740322,
+        0.770298
       ],
       "turn_truncated": true
     },
@@ -18294,7 +18294,7 @@
       "rewritten_tokens": 484,
       "truncated": true,
       "similarity_per_turn": 0.94218,
-      "min_turn_similarity": 0.807857,
+      "min_turn_similarity": 0.807858,
       "turn_similarities": [
         1.0,
         1.0,
@@ -18302,7 +18302,7 @@
         0.983393,
         0.925716,
         0.878295,
-        0.807857
+        0.807858
       ],
       "turn_truncated": true
     },
@@ -18514,13 +18514,13 @@
       "rewritten_tokens": 526,
       "truncated": true,
       "similarity_per_turn": 0.975238,
-      "min_turn_similarity": 0.918321,
+      "min_turn_similarity": 0.91832,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.973998,
-        0.918321,
+        0.91832,
         0.968576,
         0.971734,
         0.969278
@@ -18544,10 +18544,10 @@
         1.0,
         0.978135,
         0.954356,
-        0.866027,
+        0.866026,
         0.851136,
         0.647976,
-        0.668677
+        0.668678
       ],
       "turn_truncated": true
     },
@@ -18593,7 +18593,7 @@
         0.934669,
         0.939977,
         0.838712,
-        0.844551
+        0.844552
       ],
       "turn_truncated": true
     },
@@ -18613,9 +18613,9 @@
         1.0,
         1.0,
         0.980413,
-        0.873011,
+        0.87301,
         0.732347,
-        0.720824,
+        0.720823,
         0.676393,
         0.718073
       ],
@@ -18735,7 +18735,7 @@
         1.0,
         1.0,
         0.989746,
-        0.966038,
+        0.966037,
         0.85161
       ],
       "turn_truncated": true
@@ -18758,7 +18758,7 @@
         1.0,
         0.996488,
         0.965243,
-        0.97118,
+        0.971181,
         0.972527,
         0.932977
       ],
@@ -18782,7 +18782,7 @@
         1.0,
         0.985264,
         0.980867,
-        0.942046,
+        0.942047,
         0.899118,
         0.81887
       ],
@@ -18805,7 +18805,7 @@
         1.0,
         1.0,
         0.969849,
-        0.982224,
+        0.982223,
         0.98311,
         0.992619,
         0.990679
@@ -18958,7 +18958,7 @@
         1.0,
         1.0,
         1.0,
-        0.964205,
+        0.964204,
         0.741485
       ],
       "turn_truncated": false
@@ -19001,7 +19001,7 @@
       "min_turn_similarity": 0.958908,
       "turn_similarities": [
         1.0,
-        0.984192,
+        0.984193,
         0.976923,
         0.970073,
         0.973376,
@@ -19148,7 +19148,7 @@
         0.966425,
         0.914,
         0.865087,
-        0.707452,
+        0.707451,
         0.668369
       ],
       "turn_truncated": true
@@ -19172,8 +19172,8 @@
         1.0,
         0.980418,
         0.926583,
-        0.920796,
-        0.878338,
+        0.920795,
+        0.878339,
         0.67554
       ],
       "turn_truncated": true
@@ -19213,7 +19213,7 @@
       "rewritten_tokens": 473,
       "truncated": true,
       "similarity_per_turn": 0.9935,
-      "min_turn_similarity": 0.98228,
+      "min_turn_similarity": 0.982281,
       "turn_similarities": [
         1.0,
         1.0,
@@ -19222,7 +19222,7 @@
         0.990088,
         0.98798,
         0.987652,
-        0.98228
+        0.982281
       ],
       "turn_truncated": true
     },
@@ -19237,7 +19237,7 @@
       "rewritten_tokens": 686,
       "truncated": true,
       "similarity_per_turn": 0.959117,
-      "min_turn_similarity": 0.879109,
+      "min_turn_similarity": 0.879108,
       "turn_similarities": [
         0.987299,
         0.986254,
@@ -19246,7 +19246,7 @@
         0.951072,
         0.963836,
         0.951949,
-        0.879109
+        0.879108
       ],
       "turn_truncated": true
     },
@@ -19292,7 +19292,7 @@
         1.0,
         1.0,
         1.0,
-        0.979026,
+        0.979027,
         0.918632,
         0.916435
       ],
@@ -19317,7 +19317,7 @@
         0.887406,
         0.822141,
         0.798045,
-        0.853577
+        0.853576
       ],
       "turn_truncated": true
     },
@@ -19457,7 +19457,7 @@
         1.0,
         1.0,
         0.932253,
-        0.952273,
+        0.952274,
         0.979683
       ],
       "turn_truncated": true
@@ -19496,7 +19496,7 @@
       "rewritten_tokens": 754,
       "truncated": true,
       "similarity_per_turn": 0.964009,
-      "min_turn_similarity": 0.819879,
+      "min_turn_similarity": 0.81988,
       "turn_similarities": [
         1.0,
         1.0,
@@ -19504,7 +19504,7 @@
         0.977664,
         0.977386,
         0.973131,
-        0.819879
+        0.81988
       ],
       "turn_truncated": true
     },
@@ -19616,14 +19616,14 @@
       "rewritten_tokens": 630,
       "truncated": true,
       "similarity_per_turn": 0.960066,
-      "min_turn_similarity": 0.886146,
+      "min_turn_similarity": 0.886145,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.988989,
         0.977204,
-        0.886146,
+        0.886145,
         0.916031,
         0.912159
       ],
@@ -19692,8 +19692,8 @@
         1.0,
         0.954788,
         0.959285,
-        0.932703,
-        0.886035,
+        0.932704,
+        0.886034,
         0.740912,
         0.701426
       ],
@@ -19709,7 +19709,7 @@
       "original_tokens": 578,
       "rewritten_tokens": 580,
       "truncated": true,
-      "similarity_per_turn": 0.928367,
+      "similarity_per_turn": 0.928368,
       "min_turn_similarity": 0.710944,
       "turn_similarities": [
         1.0,
@@ -19740,7 +19740,7 @@
         1.0,
         1.0,
         1.0,
-        0.974743,
+        0.974742,
         0.977843,
         0.96447,
         0.987878
@@ -19782,7 +19782,7 @@
       "rewritten_tokens": 545,
       "truncated": true,
       "similarity_per_turn": 0.975162,
-      "min_turn_similarity": 0.832823,
+      "min_turn_similarity": 0.832824,
       "turn_similarities": [
         1.0,
         1.0,
@@ -19791,7 +19791,7 @@
         1.0,
         0.979334,
         0.989138,
-        0.832823
+        0.832824
       ],
       "turn_truncated": true
     },
@@ -19806,7 +19806,7 @@
       "rewritten_tokens": 786,
       "truncated": true,
       "similarity_per_turn": 0.949733,
-      "min_turn_similarity": 0.830184,
+      "min_turn_similarity": 0.830183,
       "turn_similarities": [
         1.0,
         1.0,
@@ -19815,7 +19815,7 @@
         0.941874,
         0.935335,
         0.932267,
-        0.830184
+        0.830183
       ],
       "turn_truncated": true
     },
@@ -19877,15 +19877,15 @@
       "rewritten_tokens": 555,
       "truncated": true,
       "similarity_per_turn": 0.893204,
-      "min_turn_similarity": 0.565868,
+      "min_turn_similarity": 0.565869,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         0.988586,
-        0.88261,
-        0.565868,
+        0.882609,
+        0.565869,
         0.708571
       ],
       "turn_truncated": true
@@ -19907,7 +19907,7 @@
         1.0,
         0.988362,
         0.957293,
-        0.880528,
+        0.880529,
         0.851435,
         0.861339
       ],
@@ -20001,7 +20001,7 @@
         0.99226,
         0.972081,
         0.969169,
-        0.990676,
+        0.990677,
         0.923508
       ],
       "turn_truncated": true
@@ -20142,7 +20142,7 @@
         1.0,
         0.992169,
         0.936737,
-        0.959679,
+        0.95968,
         0.962771,
         0.902469
       ],
@@ -20159,13 +20159,13 @@
       "rewritten_tokens": 456,
       "truncated": true,
       "similarity_per_turn": 0.978025,
-      "min_turn_similarity": 0.949226,
+      "min_turn_similarity": 0.949227,
       "turn_similarities": [
         1.0,
         1.0,
         0.992284,
         0.956318,
-        0.949226,
+        0.949227,
         0.970324
       ],
       "turn_truncated": true
@@ -20234,8 +20234,8 @@
         1.0,
         1.0,
         1.0,
-        0.996523,
-        0.879692,
+        0.996524,
+        0.879693,
         0.809889,
         0.805218
       ],
@@ -20298,15 +20298,15 @@
       "original_tokens": 671,
       "rewritten_tokens": 644,
       "truncated": true,
-      "similarity_per_turn": 0.852719,
+      "similarity_per_turn": 0.852718,
       "min_turn_similarity": 0.687045,
       "turn_similarities": [
         1.0,
         0.977759,
         0.894264,
         0.866546,
-        0.770451,
-        0.772966,
+        0.77045,
+        0.772965,
         0.687045
       ],
       "turn_truncated": true
@@ -20374,7 +20374,7 @@
         1.0,
         1.0,
         1.0,
-        0.980266,
+        0.980265,
         0.862752,
         0.780385,
         0.727474,
@@ -20543,7 +20543,7 @@
         0.975519,
         0.944691,
         0.897666,
-        0.915761,
+        0.91576,
         0.89749,
         0.847265
       ],
@@ -20583,16 +20583,16 @@
       "rewritten_tokens": 548,
       "truncated": true,
       "similarity_per_turn": 0.93821,
-      "min_turn_similarity": 0.878134,
+      "min_turn_similarity": 0.878135,
       "turn_similarities": [
         1.0,
         1.0,
         0.950198,
         0.884015,
-        0.905635,
+        0.905636,
         0.936424,
         0.951275,
-        0.878134
+        0.878135
       ],
       "turn_truncated": true
     },
@@ -20900,8 +20900,8 @@
         1.0,
         1.0,
         1.0,
-        0.928738,
-        0.963441,
+        0.928739,
+        0.963442,
         0.940227,
         0.892793
       ],
@@ -21105,7 +21105,7 @@
         0.969299,
         0.920713,
         0.908575,
-        0.89903,
+        0.899031,
         0.84515,
         0.865094
       ],
@@ -21127,7 +21127,7 @@
         1.0,
         1.0,
         1.0,
-        0.996923,
+        0.996922,
         0.959416,
         0.918114,
         0.888824,
@@ -21155,7 +21155,7 @@
         0.910207,
         0.933215,
         0.905331,
-        0.909436
+        0.909435
       ],
       "turn_truncated": true
     },
@@ -21249,7 +21249,7 @@
       "rewritten_tokens": 478,
       "truncated": true,
       "similarity_per_turn": 0.989525,
-      "min_turn_similarity": 0.961239,
+      "min_turn_similarity": 0.961238,
       "turn_similarities": [
         1.0,
         1.0,
@@ -21257,7 +21257,7 @@
         0.98695,
         0.985538,
         0.992951,
-        0.961239
+        0.961238
       ],
       "turn_truncated": true
     },
@@ -21335,7 +21335,7 @@
       "rewritten_tokens": 591,
       "truncated": true,
       "similarity_per_turn": 0.960108,
-      "min_turn_similarity": 0.863023,
+      "min_turn_similarity": 0.863022,
       "turn_similarities": [
         1.0,
         1.0,
@@ -21343,7 +21343,7 @@
         0.992205,
         0.951304,
         0.914223,
-        0.863023
+        0.863022
       ],
       "turn_truncated": true
     },
@@ -21428,7 +21428,7 @@
       "original_tokens": 588,
       "rewritten_tokens": 567,
       "truncated": true,
-      "similarity_per_turn": 0.834494,
+      "similarity_per_turn": 0.834495,
       "min_turn_similarity": 0.665316,
       "turn_similarities": [
         1.0,
@@ -21475,7 +21475,7 @@
       "rewritten_tokens": 520,
       "truncated": true,
       "similarity_per_turn": 0.945844,
-      "min_turn_similarity": 0.832095,
+      "min_turn_similarity": 0.832094,
       "turn_similarities": [
         1.0,
         1.0,
@@ -21484,7 +21484,7 @@
         0.952583,
         0.919711,
         0.891416,
-        0.832095
+        0.832094
       ],
       "turn_truncated": true
     },
@@ -21599,7 +21599,7 @@
         1.0,
         1.0,
         0.919733,
-        0.817553,
+        0.817554,
         0.762796,
         0.810395,
         0.614068
@@ -21647,9 +21647,9 @@
         1.0,
         1.0,
         0.963367,
-        0.928269,
+        0.92827,
         0.925815,
-        0.886562,
+        0.886563,
         0.776671
       ],
       "turn_truncated": true
@@ -21814,13 +21814,13 @@
       "original_tokens": 632,
       "rewritten_tokens": 637,
       "truncated": true,
-      "similarity_per_turn": 0.96846,
+      "similarity_per_turn": 0.968461,
       "min_turn_similarity": 0.877531,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
-        0.986642,
+        0.986643,
         0.976955,
         0.979157,
         0.877531,
@@ -21838,7 +21838,7 @@
       "original_tokens": 810,
       "rewritten_tokens": 809,
       "truncated": true,
-      "similarity_per_turn": 0.969124,
+      "similarity_per_turn": 0.969123,
       "min_turn_similarity": 0.859507,
       "turn_similarities": [
         1.0,
@@ -21918,7 +21918,7 @@
         1.0,
         1.0,
         0.935756,
-        0.969601
+        0.969602
       ],
       "turn_truncated": true
     },
@@ -21932,7 +21932,7 @@
       "original_tokens": 603,
       "rewritten_tokens": 595,
       "truncated": true,
-      "similarity_per_turn": 0.92531,
+      "similarity_per_turn": 0.925311,
       "min_turn_similarity": 0.826399,
       "turn_similarities": [
         1.0,
@@ -22081,7 +22081,7 @@
         1.0,
         1.0,
         1.0,
-        0.998528,
+        0.998529,
         0.985582,
         0.974358,
         0.823862
@@ -22104,7 +22104,7 @@
         1.0,
         1.0,
         0.957203,
-        0.913655,
+        0.913654,
         0.870923,
         0.898542,
         0.683443,
@@ -22145,7 +22145,7 @@
       "original_tokens": 733,
       "rewritten_tokens": 731,
       "truncated": true,
-      "similarity_per_turn": 0.989684,
+      "similarity_per_turn": 0.989683,
       "min_turn_similarity": 0.980816,
       "turn_similarities": [
         1.0,
@@ -22365,7 +22365,7 @@
       "original_tokens": 412,
       "rewritten_tokens": 410,
       "truncated": true,
-      "similarity_per_turn": 0.909166,
+      "similarity_per_turn": 0.909165,
       "min_turn_similarity": 0.654691,
       "turn_similarities": [
         1.0,
@@ -22514,7 +22514,7 @@
         1.0,
         0.973778,
         0.916529,
-        0.923047,
+        0.923048,
         0.922072
       ],
       "turn_truncated": false
@@ -22536,7 +22536,7 @@
         1.0,
         0.994,
         0.973512,
-        0.809019,
+        0.80902,
         0.852219,
         0.793964,
         0.725752
@@ -22584,8 +22584,8 @@
       "original_tokens": 586,
       "rewritten_tokens": 576,
       "truncated": true,
-      "similarity_per_turn": 0.954557,
-      "min_turn_similarity": 0.896573,
+      "similarity_per_turn": 0.954556,
+      "min_turn_similarity": 0.896572,
       "turn_similarities": [
         1.0,
         1.0,
@@ -22593,7 +22593,7 @@
         0.957514,
         0.953451,
         0.92783,
-        0.896573,
+        0.896572,
         0.920616
       ],
       "turn_truncated": true
@@ -22609,14 +22609,14 @@
       "rewritten_tokens": 418,
       "truncated": true,
       "similarity_per_turn": 0.957391,
-      "min_turn_similarity": 0.881519,
+      "min_turn_similarity": 0.881518,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         0.906373,
-        0.956455,
-        0.881519
+        0.956454,
+        0.881518
       ],
       "turn_truncated": true
     },
@@ -22654,7 +22654,7 @@
       "rewritten_tokens": 697,
       "truncated": true,
       "similarity_per_turn": 0.982808,
-      "min_turn_similarity": 0.845269,
+      "min_turn_similarity": 0.845268,
       "turn_similarities": [
         1.0,
         1.0,
@@ -22664,7 +22664,7 @@
         1.0,
         1.0,
         1.0,
-        0.845269
+        0.845268
       ],
       "turn_truncated": true
     },
@@ -22678,7 +22678,7 @@
       "original_tokens": 732,
       "rewritten_tokens": 728,
       "truncated": true,
-      "similarity_per_turn": 0.865623,
+      "similarity_per_turn": 0.865624,
       "min_turn_similarity": 0.74802,
       "turn_similarities": [
         1.0,
@@ -22778,10 +22778,10 @@
         1.0,
         1.0,
         1.0,
-        0.984543,
+        0.984542,
         0.957944,
         0.958628,
-        0.919641,
+        0.91964,
         0.858772
       ],
       "turn_truncated": true
@@ -22843,14 +22843,14 @@
       "rewritten_tokens": 503,
       "truncated": true,
       "similarity_per_turn": 0.97604,
-      "min_turn_similarity": 0.857203,
+      "min_turn_similarity": 0.857202,
       "turn_similarities": [
         1.0,
         1.0,
         1.0,
         1.0,
         1.0,
-        0.857203,
+        0.857202,
         0.951114,
         1.0
       ],
@@ -22898,7 +22898,7 @@
         0.973081,
         0.911236,
         0.884688,
-        0.747821,
+        0.747822,
         0.657145
       ],
       "turn_truncated": true
@@ -22960,7 +22960,7 @@
       "rewritten_tokens": 655,
       "truncated": true,
       "similarity_per_turn": 0.903819,
-      "min_turn_similarity": 0.799429,
+      "min_turn_similarity": 0.799428,
       "turn_similarities": [
         1.0,
         1.0,
@@ -22969,7 +22969,7 @@
         0.864009,
         0.844247,
         0.854559,
-        0.799429
+        0.799428
       ],
       "turn_truncated": true
     },

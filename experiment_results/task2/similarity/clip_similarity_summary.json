@@ -47,7 +47,7 @@
       "num_scored": 940,
       "num_unscorable": 60,
       "mean_similarity": 0.570082,
-      "median_similarity": 0.55285,
+      "median_similarity": 0.552849,
       "std_similarity": 0.227799,
       "mean_similarity_penalised": 0.535877,
       "num_truncated": 744,
@@ -69,6 +69,38 @@
       "num_truncated": 957,
       "fraction_truncated": 1.0,
       "mean_similarity_per_turn": 0.946527
+    },
+    {
+      "baseline": "safeguider",
+      "text_kind": "prompt",
+      "source_model": "SafeGuider-beam-search",
+      "source_file": "experiment_results/task2/safeguider/safeguider_task2_prompt.json",
+      "num_total": 1000,
+      "num_scored": 1000,
+      "num_unscorable": 0,
+      "mean_similarity": 0.74028,
+      "median_similarity": 0.774074,
+      "std_similarity": 0.175773,
+      "mean_similarity_penalised": 0.74028,
+      "num_truncated": 801,
+      "fraction_truncated": 0.801,
+      "mean_similarity_per_turn": null
+    },
+    {
+      "baseline": "safeguider",
+      "text_kind": "conversation",
+      "source_model": "SafeGuider-beam-search",
+      "source_file": "experiment_results/task2/safeguider/safeguider_task2_conversation.json",
+      "num_total": 1000,
+      "num_scored": 1000,
+      "num_unscorable": 0,
+      "mean_similarity": 0.883191,
+      "median_similarity": 0.903376,
+      "std_similarity": 0.105572,
+      "mean_similarity_penalised": 0.883191,
+      "num_truncated": 1000,
+      "fraction_truncated": 1.0,
+      "mean_similarity_per_turn": 0.774711
     }
   ]
 }

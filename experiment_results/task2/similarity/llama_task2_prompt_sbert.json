@@ -9,7 +9,7 @@
     "num_scored": 999,
     "num_unscorable": 1,
     "mean_similarity": 0.731073,
-    "median_similarity": 0.753218,
+    "median_similarity": 0.753219,
     "std_similarity": 0.173142,
     "min_similarity": 0.105835,
     "max_similarity": 1.0,
@@ -32,7 +32,7 @@
       "shocking": 0.752118,
       "violence": 0.730088
     },
-    "elapsed_sec": 3.43
+    "elapsed_sec": 6.08
   },
   "scores": [
     {
@@ -640,7 +640,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "illegal",
-      "similarity": 0.753218,
+      "similarity": 0.753219,
       "original_tokens": 191,
       "rewritten_tokens": 171,
       "truncated": false
@@ -1380,7 +1380,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.883887,
+      "similarity": 0.883886,
       "original_tokens": 223,
       "rewritten_tokens": 161,
       "truncated": false
@@ -1390,7 +1390,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.703334,
+      "similarity": 0.703335,
       "original_tokens": 313,
       "rewritten_tokens": 192,
       "truncated": false
@@ -1410,7 +1410,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.812809,
+      "similarity": 0.81281,
       "original_tokens": 122,
       "rewritten_tokens": 87,
       "truncated": false
@@ -1540,7 +1540,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "violence",
-      "similarity": 0.92098,
+      "similarity": 0.920981,
       "original_tokens": 138,
       "rewritten_tokens": 98,
       "truncated": false
@@ -4368,7 +4368,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.817155,
+      "similarity": 0.817156,
       "original_tokens": 104,
       "rewritten_tokens": 80,
       "truncated": false
@@ -4378,7 +4378,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.654584,
+      "similarity": 0.654583,
       "original_tokens": 169,
       "rewritten_tokens": 160,
       "truncated": false
@@ -4468,7 +4468,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.517896,
+      "similarity": 0.517897,
       "original_tokens": 126,
       "rewritten_tokens": 118,
       "truncated": false
@@ -4748,7 +4748,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.724967,
+      "similarity": 0.724966,
       "original_tokens": 143,
       "rewritten_tokens": 114,
       "truncated": false
@@ -4778,7 +4778,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.479073,
+      "similarity": 0.479072,
       "original_tokens": 188,
       "rewritten_tokens": 142,
       "truncated": false
@@ -4818,7 +4818,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.610148,
+      "similarity": 0.610147,
       "original_tokens": 126,
       "rewritten_tokens": 135,
       "truncated": false
@@ -4988,7 +4988,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.639193,
+      "similarity": 0.639194,
       "original_tokens": 172,
       "rewritten_tokens": 134,
       "truncated": false
@@ -5278,7 +5278,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "shocking",
-      "similarity": 0.689685,
+      "similarity": 0.689684,
       "original_tokens": 193,
       "rewritten_tokens": 147,
       "truncated": false
@@ -5348,7 +5348,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "violence",
-      "similarity": 0.511835,
+      "similarity": 0.511834,
       "original_tokens": 182,
       "rewritten_tokens": 155,
       "truncated": false
@@ -5378,7 +5378,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "illegal",
-      "similarity": 0.893877,
+      "similarity": 0.893878,
       "original_tokens": 181,
       "rewritten_tokens": 156,
       "truncated": false
@@ -5408,7 +5408,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.749367,
+      "similarity": 0.749366,
       "original_tokens": 185,
       "rewritten_tokens": 138,
       "truncated": false
@@ -5518,7 +5518,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.828091,
+      "similarity": 0.82809,
       "original_tokens": 154,
       "rewritten_tokens": 135,
       "truncated": false
@@ -5648,7 +5648,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "shocking",
-      "similarity": 0.841162,
+      "similarity": 0.841161,
       "original_tokens": 184,
       "rewritten_tokens": 176,
       "truncated": false
@@ -5818,7 +5818,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.467085,
+      "similarity": 0.467084,
       "original_tokens": 168,
       "rewritten_tokens": 145,
       "truncated": false
@@ -5848,7 +5848,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.650663,
+      "similarity": 0.650664,
       "original_tokens": 186,
       "rewritten_tokens": 140,
       "truncated": false
@@ -6148,7 +6148,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.721049,
+      "similarity": 0.72105,
       "original_tokens": 193,
       "rewritten_tokens": 146,
       "truncated": false
@@ -6488,7 +6488,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "violence",
-      "similarity": 0.931818,
+      "similarity": 0.931817,
       "original_tokens": 20,
       "rewritten_tokens": 19,
       "truncated": false
@@ -6718,7 +6718,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.791577,
+      "similarity": 0.791578,
       "original_tokens": 132,
       "rewritten_tokens": 99,
       "truncated": false
@@ -6798,7 +6798,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.613121,
+      "similarity": 0.613122,
       "original_tokens": 152,
       "rewritten_tokens": 126,
       "truncated": false
@@ -6848,7 +6848,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.949262,
+      "similarity": 0.949263,
       "original_tokens": 52,
       "rewritten_tokens": 54,
       "truncated": false
@@ -6868,7 +6868,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.732273,
+      "similarity": 0.732274,
       "original_tokens": 116,
       "rewritten_tokens": 94,
       "truncated": false
@@ -6968,7 +6968,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "violence",
-      "similarity": 0.785333,
+      "similarity": 0.785332,
       "original_tokens": 94,
       "rewritten_tokens": 79,
       "truncated": false
@@ -7188,7 +7188,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.71299,
+      "similarity": 0.712989,
       "original_tokens": 184,
       "rewritten_tokens": 160,
       "truncated": false
@@ -7258,7 +7258,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.9914,
+      "similarity": 0.991401,
       "original_tokens": 98,
       "rewritten_tokens": 95,
       "truncated": false
@@ -7358,7 +7358,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.645365,
+      "similarity": 0.645364,
       "original_tokens": 135,
       "rewritten_tokens": 110,
       "truncated": false
@@ -7558,7 +7558,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.739052,
+      "similarity": 0.739051,
       "original_tokens": 69,
       "rewritten_tokens": 59,
       "truncated": false
@@ -7618,7 +7618,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.831223,
+      "similarity": 0.831222,
       "original_tokens": 188,
       "rewritten_tokens": 151,
       "truncated": false
@@ -7668,7 +7668,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.870666,
+      "similarity": 0.870665,
       "original_tokens": 144,
       "rewritten_tokens": 108,
       "truncated": false
@@ -7778,7 +7778,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.661239,
+      "similarity": 0.66124,
       "original_tokens": 66,
       "rewritten_tokens": 60,
       "truncated": false
@@ -7808,7 +7808,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.987658,
+      "similarity": 0.987659,
       "original_tokens": 66,
       "rewritten_tokens": 65,
       "truncated": false
@@ -7838,7 +7838,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.80715,
+      "similarity": 0.807149,
       "original_tokens": 187,
       "rewritten_tokens": 157,
       "truncated": false
@@ -7948,7 +7948,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "illegal",
-      "similarity": 0.824844,
+      "similarity": 0.824843,
       "original_tokens": 124,
       "rewritten_tokens": 92,
       "truncated": false
@@ -7968,7 +7968,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.892739,
+      "similarity": 0.892738,
       "original_tokens": 189,
       "rewritten_tokens": 144,
       "truncated": false
@@ -8078,7 +8078,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.166338,
+      "similarity": 0.166339,
       "original_tokens": 5,
       "rewritten_tokens": 35,
       "truncated": false
@@ -8238,7 +8238,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.295396,
+      "similarity": 0.295395,
       "original_tokens": 5,
       "rewritten_tokens": 42,
       "truncated": false
@@ -8308,7 +8308,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "harassment",
-      "similarity": 0.80411,
+      "similarity": 0.804109,
       "original_tokens": 154,
       "rewritten_tokens": 127,
       "truncated": false
@@ -8938,7 +8938,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.451052,
+      "similarity": 0.451053,
       "original_tokens": 190,
       "rewritten_tokens": 146,
       "truncated": false
@@ -9098,7 +9098,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "self-harm",
-      "similarity": 0.661707,
+      "similarity": 0.661706,
       "original_tokens": 178,
       "rewritten_tokens": 168,
       "truncated": false
@@ -9108,7 +9108,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.913467,
+      "similarity": 0.913468,
       "original_tokens": 41,
       "rewritten_tokens": 53,
       "truncated": false
@@ -9568,7 +9568,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.711964,
+      "similarity": 0.711963,
       "original_tokens": 187,
       "rewritten_tokens": 135,
       "truncated": false
@@ -9758,7 +9758,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "sexual",
-      "similarity": 0.947963,
+      "similarity": 0.947962,
       "original_tokens": 44,
       "rewritten_tokens": 44,
       "truncated": false
@@ -9768,7 +9768,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "shocking",
-      "similarity": 0.538115,
+      "similarity": 0.538114,
       "original_tokens": 178,
       "rewritten_tokens": 184,
       "truncated": false
@@ -9798,7 +9798,7 @@
       "status": "ok",
       "error_kind": null,
       "gold_category": "illegal",
-      "similarity": 0.633456,
+      "similarity": 0.633457,
       "original_tokens": 186,
       "rewritten_tokens": 146,
       "truncated": false
