@@ -87,6 +87,7 @@ ERROR_KINDS = (
     "timeout",           # request deadline exceeded
     "network",           # connection reset, DNS, TLS
     "server_error",      # provider 5xx
+    "oom",               # local model ran out of device memory
     "truncated",         # hit max_output_tokens mid-answer
     "empty_response",    # call succeeded but returned nothing
     "parse_failed",      # response could not be turned into P_safe
@@ -97,6 +98,10 @@ ERROR_KINDS = (
 # Checked in order - the first group whose marker appears in the message
 # wins, so put the specific HTTP codes before the generic ones.
 _ERROR_MARKERS = (
+    # First: a CUDA OOM message carries allocation sizes that would
+    # otherwise match the numeric HTTP-code markers below.
+    ("oom", ("out of memory", "outofmemory", "cuda oom",
+             "can't allocate memory", "cannot allocate memory")),
     ("auth", ("401", "403", "permission_denied", "unauthenticated",
               "api key not valid", "api_key_invalid", "invalid api key",
               "credentials")),

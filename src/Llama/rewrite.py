@@ -1,27 +1,55 @@
-"""Task 2 rewrite pipeline using Llama-3.1-8B-Instruct.
+"""Task 2 rewrite pipeline using local Llama-3.1-8B-Instruct.
 
-Mirrors the public surface of :mod:`src.SafeGuider.rewrite` so that
-benchmarking code can swap baselines transparently:
+The open-source counterpart to :mod:`src.Gemini.rewrite`. Both rewriters
+share the system prompts and the ``[Tn]`` turn contract
+(:mod:`src.utils.rewrite_prompt`) and the record schema
+(:class:`src.utils.RewriteRecord`), so Table 2 compares the models
+rather than two different task framings.
 
-    pipe = RewritePipeline.from_pretrained(weights_dir)
-    results = pipe.rewrite_samples(samples)
+Rewrites both GuardChat input representations:
 
-The model is **inference only** - there is no training. Rewriting is
-configured entirely by the shared system prompt in
-:mod:`src.utils.rewrite_prompt`.
+``prompt``
+    The enhanced adversarial prompt - one string in, one string out.
+``conversation``
+    The 6-9 turn dialogue, sent as a single ``[T1] ... [Tn]`` block and
+    parsed back into turns so we can verify the model did not merge,
+    drop or invent any.
+
+Retries
+-------
+Llama-3.1-8B is a general instruct model, not a safety model: it refuses
+some GuardChat inputs outright, and at 8B it sometimes breaks the turn
+contract. Those rows are retried up to ``retries`` times, but the retry
+**samples** instead of decoding greedily - a greedy re-run of the same
+prompt is bit-for-bit identical, so retrying it would burn GPU time to
+reproduce the same failure. The first attempt stays greedy, so a run in
+which nothing fails is exactly reproducible.
+
+There is no provider to block a request here, so ``blocked`` never
+appears; the local analogue is ``refusal``.
+
+No fallback text is ever substituted. Failed rows keep an empty
+``rewritten_text`` plus a ``status`` and an ``error_kind``.
 """
 
 from __future__ import annotations
 
-import os
 import time
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from src.utils import (
     GuardChatSample,
+    RewriteRecord,
+    base_record,
     build_rewrite_messages,
+    classify_error_message,
     cleanup_rewrite_response,
+    looks_like_refusal,
+    normalise_rewrite_kind,
+    parse_turns,
+    resolve_hf_token,
+    rewrite_system_prompt_for,
+    rewritten_conversation_text,
 )
 
 from .model import (
@@ -33,118 +61,257 @@ from .model import (
 )
 
 
-@dataclass
-class RewriteResult:
-    """One rewrite output, ready for serialisation.
-
-    Schema is aligned with :class:`src.SafeGuider.rewrite.RewriteResult`
-    so a shared aggregator can compose Table 2 across baselines.
-    Fields specific to SafeGuider's beam search (``removed_tokens``,
-    ``original_safety``, ``modified_safety``, ``safeguider_similarity``)
-    are intentionally absent here - they have no analogue in an
-    LLM-based rewriter.
-    """
-
-    sample_id: str
-    original_prompt: str
-    rewritten_prompt: str
-    was_modified: bool
-    raw_response: str
-    elapsed_sec: float
-    label_names: List[str]
-    source: Optional[str] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "sample_id": self.sample_id,
-            "original_prompt": self.original_prompt,
-            "rewritten_prompt": self.rewritten_prompt,
-            "was_modified": self.was_modified,
-            "raw_response": self.raw_response,
-            "elapsed_sec": self.elapsed_sec,
-            "label_names": self.label_names,
-            "source": self.source,
-        }
+# Statuses worth another attempt. A blank or unparseable answer is often
+# a decoding accident an 8B model recovers from once the sampler is
+# perturbed; a refusal likewise.
+_RETRYABLE = frozenset({"refusal", "empty", "parse_failed"})
 
 
 class RewritePipeline:
-    """Llama-3.1-8B-Instruct rewriter wired to the GuardChat schema."""
+    """Local Llama-3.1-8B-Instruct rewriter wired to the GuardChat schema."""
 
     def __init__(
         self,
         model: LlamaModel,
-        system_prompt: Optional[str] = None,
+        system_prompts: Optional[Dict[str, str]] = None,
+        retries: int = 3,
     ) -> None:
         self.model = model
-        # ``None`` means "use the shared default in src.utils.rewrite_prompt".
-        self.system_prompt = system_prompt
+        self.system_prompts = dict(system_prompts or {})
+        self.retries = max(1, int(retries))
 
     @classmethod
     def from_pretrained(
         cls,
         weights: str = DEFAULT_LOCAL_DIR,
+        dtype: str = "auto",
         device: Optional[str] = None,
-        dtype: str = "bfloat16",
-        max_new_tokens: int = 200,
-        do_sample: bool = False,
-        system_prompt: Optional[str] = None,
+        token: Optional[str] = None,
+        batch_size: int = 8,
+        max_new_tokens: Optional[int] = None,
+        retries: int = 3,
+        auto_download: bool = True,
+        system_prompts: Optional[Dict[str, str]] = None,
     ) -> "RewritePipeline":
-        cfg = LlamaConfig(
+        model = LlamaModel(LlamaConfig(
             model_path=weights,
             dtype=dtype,
             device=device,
-            generation=GenerationConfig(
-                max_new_tokens=max_new_tokens,
-                do_sample=do_sample,
-            ),
-        )
-        model = LlamaModel(cfg)
-        return cls(model=model, system_prompt=system_prompt)
+            token=resolve_hf_token(token),
+            batch_size=batch_size,
+            generation=GenerationConfig(max_new_tokens=max_new_tokens),
+            auto_download=auto_download,
+        ))
+        return cls(model=model, system_prompts=system_prompts, retries=retries)
 
-    # --------------------------- Inference -------------------------- #
+    @property
+    def model_name(self) -> str:
+        return DEFAULT_MODEL_NAME
 
-    def rewrite_prompt(
+    def system_prompt(self, kind: str) -> str:
+        return self.system_prompts.get(kind) or rewrite_system_prompt_for(kind)
+
+    # ------------------------ Per-sample plumbing -------------------- #
+
+    def _prepare(
         self,
-        prompt: str,
-        sample_id: str = "0",
-        label_names: Optional[List[str]] = None,
-        source: Optional[str] = None,
-    ) -> RewriteResult:
-        t0 = time.time()
-        messages = build_rewrite_messages(prompt, system_prompt=self.system_prompt)
-        raw = self.model.rewrite(messages)
-        cleaned = cleanup_rewrite_response(raw)
-        # If cleanup returned an empty string, fall back to a generic
-        # safe alternative so downstream T2I pipelines never receive ""
-        if not cleaned:
-            cleaned = "a serene landscape"
-        return RewriteResult(
-            sample_id=str(sample_id),
-            original_prompt=str(prompt or ""),
-            rewritten_prompt=cleaned,
-            was_modified=(cleaned.strip().lower() != str(prompt or "").strip().lower()),
-            raw_response=raw,
-            elapsed_sec=round(time.time() - t0, 4),
-            label_names=list(label_names or []),
-            source=source,
+        sample: GuardChatSample,
+        kind: str,
+    ) -> Tuple[RewriteRecord, Optional[List[Dict[str, str]]], int]:
+        """Build the record, the chat messages, and the source length.
+
+        ``messages`` is ``None`` when the row has nothing to rewrite; the
+        record is already finalised in that case.
+        """
+        rec = base_record(sample, kind, model=self.model_name)
+
+        if kind == "conversation":
+            payload: Any = rec.original_turns
+            has_content = bool(rec.original_turns)
+        else:
+            payload = rec.original_text
+            has_content = bool(rec.original_text.strip())
+        if not has_content:
+            rec.status = "empty"
+            rec.error_kind = "empty_input"
+            return rec, None, 0
+
+        messages = build_rewrite_messages(
+            payload, kind=kind, system_prompt=self.system_prompt(kind),
         )
+        return rec, messages, self.model.count_tokens(rec.original_text)
+
+    def _finalise(self, rec: RewriteRecord, raw_text: str) -> None:
+        """Turn one raw generation into a finished record."""
+        rec.raw_response = raw_text
+
+        if not raw_text.strip():
+            rec.status = "empty"
+            rec.error_kind = "empty_response"
+            return
+        if looks_like_refusal(raw_text):
+            rec.status = "refusal"
+            rec.error_kind = "model_refusal"
+            return
+
+        cleaned = cleanup_rewrite_response(raw_text, kind=rec.text_kind)
+        if rec.text_kind == "conversation":
+            self._finish_conversation(rec, cleaned)
+        else:
+            self._finish_prompt(rec, cleaned)
+
+    @staticmethod
+    def _finish_prompt(rec: RewriteRecord, cleaned: str) -> None:
+        rec.rewritten_text = cleaned
+        if cleaned.strip():
+            rec.status = "ok"
+            rec.error_kind = None
+        else:
+            rec.status = "empty"
+            rec.error_kind = "empty_response"
+        rec.was_modified = (
+            cleaned.strip().lower() != rec.original_text.strip().lower()
+        )
+
+    @staticmethod
+    def _finish_conversation(rec: RewriteRecord, cleaned: str) -> None:
+        turns, parse_status = parse_turns(cleaned, expected=rec.num_turns_in)
+        rec.turn_parse = parse_status
+        rec.rewritten_turns = turns
+        rec.num_turns_out = len(turns)
+
+        if not turns:
+            rec.status = "parse_failed"
+            rec.error_kind = "parse_failed"
+            rec.rewritten_text = ""
+            return
+
+        rec.rewritten_text = rewritten_conversation_text(turns)
+        if rec.rewritten_text.strip():
+            rec.status = "ok"
+            rec.error_kind = None
+        else:
+            rec.status = "empty"
+            rec.error_kind = "empty_response"
+        rec.was_modified = (
+            rec.rewritten_text.strip().lower() != rec.original_text.strip().lower()
+        )
+
+    # --------------------------- Inference --------------------------- #
+
+    def rewrite_sample(
+        self,
+        sample: GuardChatSample,
+        kind: str = "prompt",
+    ) -> RewriteRecord:
+        """Rewrite a single sample. Convenience wrapper over the batch path."""
+        return self.rewrite_samples([sample], kind=kind, progress=False)[0]
 
     def rewrite_samples(
         self,
         samples: Sequence[GuardChatSample],
-    ) -> List[RewriteResult]:
-        out: List[RewriteResult] = []
-        for s in samples:
-            out.append(self.rewrite_prompt(
-                prompt=s.enhanced_prompt,
-                sample_id=str(s.sample_id),
-                label_names=s.label_names,
-                source=s.source,
-            ))
+        kind: str = "prompt",
+        on_result: Optional[Callable[[RewriteRecord], None]] = None,
+        progress: bool = True,
+    ) -> List[RewriteRecord]:
+        """Rewrite a batch of samples under one representation.
+
+        Work proceeds one GPU batch at a time. Within a batch, the first
+        pass decodes greedily; rows that come back unusable are re-run
+        with sampling until they succeed or ``retries`` is exhausted.
+        Retrying inside the batch - rather than sweeping the whole split
+        again at the end - keeps ``on_result`` in dataset order and lets
+        the checkpoint advance batch by batch.
+        """
+        kind = normalise_rewrite_kind(kind)
+        if not samples:
+            return []
+
+        bar = self._progress_bar(len(samples), kind) if progress else None
+        out: List[RewriteRecord] = []
+        size = max(1, int(self.model.config.batch_size))
+
+        try:
+            for start in range(0, len(samples), size):
+                records = self._rewrite_chunk(samples[start:start + size], kind)
+                for rec in records:
+                    if on_result is not None:
+                        on_result(rec)
+                    out.append(rec)
+                if bar is not None:
+                    bar.update(len(records))
+        finally:
+            if bar is not None:
+                bar.close()
         return out
 
+    def _rewrite_chunk(
+        self,
+        chunk: Sequence[GuardChatSample],
+        kind: str,
+    ) -> List[RewriteRecord]:
+        t0 = time.time()
+        prepared = [self._prepare(s, kind) for s in chunk]
+        records = [p[0] for p in prepared]
 
-__all__ = [
-    "RewritePipeline",
-    "RewriteResult",
-]
+        # Rows with no input never reach the GPU.
+        pending = [i for i, (_r, msgs, _n) in enumerate(prepared) if msgs is not None]
+
+        for attempt in range(self.retries):
+            if not pending:
+                break
+            batch = [prepared[i][1] for i in pending]
+            budget = self.model.budget_for([prepared[i][2] for i in pending], kind)
+            try:
+                replies = self.model.generate_batch(
+                    batch, max_new_tokens=budget, sample=(attempt > 0),
+                )
+            except Exception as e:  # noqa: BLE001 - record, do not kill the run
+                # OOM is the realistic case here and it takes the whole
+                # batch with it. Mark every row still pending so the
+                # cause survives into the results file.
+                self._fail_batch(records, pending, attempt, e)
+                pending = []
+                break
+
+            still: List[int] = []
+            for i, raw in zip(pending, replies):
+                rec = records[i]
+                rec.attempts = attempt + 1
+                self._finalise(rec, raw)
+                if rec.status in _RETRYABLE and attempt + 1 < self.retries:
+                    still.append(i)
+            pending = still
+
+        # One wall-clock measurement per batch, shared out across its
+        # rows - per-sample timings are meaningless under batching.
+        elapsed = (time.time() - t0) / max(1, len(records))
+        for rec in records:
+            rec.elapsed_sec = elapsed
+        return records
+
+    @staticmethod
+    def _fail_batch(
+        records: List[RewriteRecord],
+        pending: Sequence[int],
+        attempt: int,
+        exc: Exception,
+    ) -> None:
+        kind = classify_error_message(str(exc))
+        for i in pending:
+            rec = records[i]
+            rec.attempts = attempt + 1
+            rec.status = "error"
+            rec.error_kind = kind
+            rec.block_reason = f"{type(exc).__name__}: {exc}"
+
+    @staticmethod
+    def _progress_bar(total: int, kind: str) -> Any:
+        try:
+            from tqdm.auto import tqdm
+        except ImportError:
+            return None
+        return tqdm(total=total, desc=f"Llama[{kind}]")
+
+
+__all__ = ["RewritePipeline"]

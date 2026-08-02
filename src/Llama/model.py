@@ -1,43 +1,65 @@
-"""Llama-3.1-8B-Instruct model wrapper for GuardChat Task 2 rewriting.
+"""Llama-3.1-8B-Instruct wrapper for GuardChat Task 2 rewriting.
 
-Loads ``meta-llama/Llama-3.1-8B-Instruct`` from a *local* folder
-populated by :mod:`src.Llama.download_weights` (default
-``src/Llama/weights/Llama-3.1-8B-Instruct``) and exposes a single
-:meth:`LlamaModel.rewrite` call that:
+Loads ``meta-llama/Llama-3.1-8B-Instruct`` from a local folder (default
+``src/Llama/weights/Llama-3.1-8B-Instruct``, populated by
+:mod:`src.Llama.download_weights`) and exposes one call,
+:meth:`LlamaModel.generate_batch`, that turns a list of chat message
+lists into a list of decoded replies.
 
-    1. wraps the unsafe prompt in the shared rewrite chat template
-       (system + user, see :mod:`src.utils.rewrite_prompt`),
-    2. runs a short causal generation,
-    3. returns the decoded string for the caller to clean via
-       :func:`utils.cleanup_rewrite_response`.
+This is the open-source counterpart to the Gemini Task-2 rewriter. It
+sees the *same* system prompts and the same ``[Tn]`` turn contract
+(:mod:`src.utils.rewrite_prompt`) and serialises to the same record
+schema, so the two rows of Table 2 differ only in the model.
+
+Batching
+--------
+1,000 samples x 2 representations is 2,000 generations, and a
+conversation rewrite has to re-emit ~1,500 tokens. Generating one at a
+time leaves the GPU almost idle, so requests are batched with **left**
+padding - the only correct padding side for decoder-only generation,
+since right padding would put pad tokens between the prompt and the
+first generated token.
+
+The token budget is adaptive: a rewrite is roughly as long as its
+input, so ``max_new_tokens`` is derived per batch from the longest
+source text rather than pinned at a worst-case constant. That keeps
+short prompts from paying for a 2,500-token generation window.
 
 Memory / dtype
 --------------
-Same footprint as Llama-Guard-3-8B - both use the Llama 3.1 architecture
-at 8B parameters:
+=============  =============  ===================================
+``dtype``      GPU footprint  notes
+=============  =============  ===================================
+``bfloat16``   ~16 GB         default on an accelerator
+``float16``    ~16 GB         if bf16 is unsupported
+``float32``    ~32 GB         the CPU default; rarely useful
+``int8``       ~9 GB          needs bitsandbytes (CUDA)
+``nf4``        ~5 GB          needs bitsandbytes (CUDA); 4-bit NF4
+=============  =============  ===================================
 
-================  ============  =====================
-``dtype``          GPU footprint  notes
-================  ============  =====================
-``bfloat16``      ~16 GB        default, recommended on H100/A100
-``float16``       ~16 GB        if bf16 unsupported
-``float32``       ~32 GB        rarely useful
-``int8``          ~9 GB         needs bitsandbytes
-``nf4``           ~5 GB         needs bitsandbytes; 4-bit NF4
-================  ============  =====================
+Add roughly ``batch_size x sequence_length`` of KV cache on top. Lower
+``--batch-size`` before lowering precision.
 
-Tested with: ``torch>=2.1``, ``transformers>=4.43`` (Llama 3.1 support),
-``accelerate>=0.26``, ``huggingface_hub>=0.20``,
-``bitsandbytes>=0.43`` (only when ``dtype in {'int8','nf4'}``).
+Tested with ``torch>=2.1``, ``transformers>=4.43`` (Llama 3.1 support),
+``accelerate>=0.26``, ``huggingface_hub>=0.23``, and
+``bitsandbytes>=0.43`` only when ``dtype in {'int8','nf4'}``.
 """
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import torch
+
+from src.utils import (
+    bnb_config,
+    default_dtype_for,
+    from_pretrained_with_dtype,
+    resolve_device,
+    resolve_weights_path,
+)
 
 
 DEFAULT_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
@@ -45,76 +67,58 @@ DEFAULT_LOCAL_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "weights", "Llama-3.1-8B-Instruct"
 )
 
-
-_DTYPE_NAMES = {
-    "bfloat16", "bf16",
-    "float16", "fp16",
-    "float32", "fp32",
-    "int8", "8bit",
-    "nf4", "4bit",
+# Ceiling on the generation window, per input representation. The
+# adaptive estimate below almost always lands well under these; they
+# exist so one pathological input cannot stall a batch.
+MAX_NEW_TOKENS_CAP: Dict[str, int] = {
+    "prompt": 1024,
+    "conversation": 2560,
 }
 
-
-def _resolve_torch_dtype(name: str) -> torch.dtype:
-    n = name.lower()
-    if n in {"bfloat16", "bf16"}:
-        return torch.bfloat16
-    if n in {"float16", "fp16"}:
-        return torch.float16
-    if n in {"float32", "fp32"}:
-        return torch.float32
-    raise ValueError(
-        f"Unsupported torch dtype {name!r}. Use one of {sorted(_DTYPE_NAMES)}."
-    )
-
-
-def _bnb_config(name: str):
-    n = name.lower()
-    if n not in {"int8", "8bit", "nf4", "4bit"}:
-        return None
-    try:
-        from transformers import BitsAndBytesConfig
-    except ImportError as e:  # pragma: no cover
-        raise RuntimeError(
-            "Quantised loading needs transformers >= 4.43 with the "
-            "BitsAndBytesConfig API."
-        ) from e
-    if n in {"int8", "8bit"}:
-        return BitsAndBytesConfig(load_in_8bit=True)
-    return BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
+# A sanitised rewrite is about as long as its source, plus slack for the
+# [Tn] markers and for substitutions that run longer than what they
+# replace ("a corpse" -> "a weathered mannequin").
+_LENGTH_SLACK = 1.4
+_LENGTH_FLOOR = 96
 
 
 @dataclass
 class GenerationConfig:
-    """Sampling settings for the rewrite call.
+    """Decoding settings.
 
-    Greedy decoding is the default - we want a deterministic rewrite,
-    not creative variance. Increase ``max_new_tokens`` if your unsafe
-    prompts are very long; 200 tokens (~150 words) handles GuardChat's
-    enhanced prompts comfortably.
+    Greedy is the default: a sanitised prompt should be reproducible, and
+    it is what the Gemini rewriter uses (``temperature=0``).
+
+    ``sample_temperature`` is only used on *retries*. Re-running a greedy
+    generation is bit-for-bit identical, so a retry after an empty or
+    unparseable answer is pointless unless the decode is perturbed - see
+    :meth:`src.Llama.rewrite.RewritePipeline.rewrite_samples`.
     """
 
-    max_new_tokens: int = 200
+    max_new_tokens: Optional[int] = None    # None = adaptive, capped per kind
     do_sample: bool = False
     temperature: float = 0.0
     top_p: float = 1.0
+    sample_temperature: float = 0.7
+    sample_top_p: float = 0.9
 
 
 @dataclass
 class LlamaConfig:
     model_path: str = DEFAULT_LOCAL_DIR
-    dtype: str = "bfloat16"
+    dtype: str = "auto"
     device: Optional[str] = None
+    token: Optional[str] = None
+    batch_size: int = 8
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    # Fetch the snapshot into ``model_path`` when it is missing, instead
+    # of leaving ~16 GB in the shared ~/.cache/huggingface tree.
+    auto_download: bool = True
+    repo_id: str = DEFAULT_MODEL_NAME
 
 
 class LlamaModel:
-    """Loaded Llama-3.1-8B-Instruct + helpers to run a single rewrite call."""
+    """Loaded Llama-3.1-8B-Instruct plus batched chat generation."""
 
     def __init__(self, config: LlamaConfig = LlamaConfig()) -> None:
         self.config = config
@@ -125,80 +129,129 @@ class LlamaModel:
     def _load(self) -> None:
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        path = self.config.model_path
-        if not (os.path.isdir(path) or "/" in path and not os.path.isabs(path)):
-            raise FileNotFoundError(
-                f"Llama-3.1 weights not found at {path!r}. "
-                f"Either pass a HuggingFace model id or run "
-                f"`python -m src.Llama.download_weights` to populate "
-                f"the local cache."
-            )
+        token = self.config.token
+        auth: Dict[str, Any] = {"token": token} if token else {}
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            path, clean_up_tokenization_spaces=True,
+        path = resolve_weights_path(
+            self.config.model_path,
+            repo_id=self.config.repo_id,
+            token=token,
+            auto_download=self.config.auto_download,
+            log_prefix="Llama",
         )
 
-        kwargs: Dict[str, Any] = {}
-        bnb = _bnb_config(self.config.dtype)
-        if bnb is not None:
-            kwargs["quantization_config"] = bnb
-            kwargs["device_map"] = "auto"
-        else:
-            kwargs["torch_dtype"] = _resolve_torch_dtype(self.config.dtype)
-            if self.config.device is not None:
-                kwargs["device_map"] = {"": self.config.device}
-            else:
-                kwargs["device_map"] = "auto"
+        self.device = resolve_device(self.config.device)
+        dtype_name = self.config.dtype
+        if not dtype_name or dtype_name == "auto":
+            dtype_name = default_dtype_for(self.device)
+        self.dtype_name = dtype_name
 
-        self.model = AutoModelForCausalLM.from_pretrained(path, **kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            path, clean_up_tokenization_spaces=True, **auth
+        )
+        # Decoder-only generation must pad on the left, or the model
+        # continues from pad tokens rather than from the prompt.
+        self.tokenizer.padding_side = "left"
+        if self.tokenizer.pad_token_id is None:
+            # Llama 3.1 ships no pad token. Its reserved right-pad id is
+            # the intended filler; fall back to EOS on older tokenizers.
+            pad = self.tokenizer.convert_tokens_to_ids("<|finetune_right_pad_id|>")
+            if pad is None or pad < 0:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            else:
+                self.tokenizer.pad_token_id = pad
+
+        bnb = bnb_config(dtype_name)
+        if bnb is not None:
+            # device_map="auto" cooperates with bitsandbytes' placement;
+            # an explicit .to(device) is unnecessary and would error.
+            self.model = AutoModelForCausalLM.from_pretrained(
+                path, quantization_config=bnb, device_map="auto", **auth
+            )
+        else:
+            self.model = from_pretrained_with_dtype(
+                AutoModelForCausalLM, path, dtype_name,
+                device_map={"": str(self.device)}, **auth
+            )
         self.model.eval()
         self.device = next(self.model.parameters()).device
 
-    # ----------------- Chat-template / generation ------------------- #
+    # ------------------------ Prompt rendering ----------------------- #
 
-    def _apply_chat_template(self, messages: Sequence[Dict[str, str]]):
-        text = self.tokenizer.apply_chat_template(
-            list(messages),
-            tokenize=False,
-            add_generation_prompt=True,
+    def render_chat(self, messages: Sequence[Mapping[str, str]]) -> str:
+        """Apply the shipped Llama 3.1 chat template.
+
+        Unlike the guard models in Task 1, nothing is hand-rolled here:
+        the template takes no taxonomy argument, so there is nothing for
+        it to silently ignore. Its ``Today Date`` line defaults to a
+        fixed string rather than the wall clock, so the rendering is
+        stable across runs.
+        """
+        return self.tokenizer.apply_chat_template(
+            list(messages), tokenize=False, add_generation_prompt=True,
         )
-        encoded = self.tokenizer(
-            text,
-            return_tensors="pt",
-            add_special_tokens=False,
-        )
-        return (
-            encoded.input_ids.to(self.device),
-            encoded.attention_mask.to(self.device),
-        )
+
+    def count_tokens(self, text: str) -> int:
+        return len(self.tokenizer(str(text), add_special_tokens=False).input_ids)
+
+    def budget_for(self, source_lengths: Sequence[int], kind: str) -> int:
+        """``max_new_tokens`` for a batch, from its longest source text."""
+        override = self.config.generation.max_new_tokens
+        cap = MAX_NEW_TOKENS_CAP.get(kind, MAX_NEW_TOKENS_CAP["prompt"])
+        if override:
+            return int(override)
+        longest = max(source_lengths) if source_lengths else 0
+        return int(min(cap, int(longest * _LENGTH_SLACK) + _LENGTH_FLOOR))
+
+    # --------------------------- Generation -------------------------- #
 
     @torch.no_grad()
-    def rewrite(self, messages: Sequence[Dict[str, str]]) -> str:
-        """Run a single rewrite turn and return the model's text reply."""
-        if not messages:
-            return ""
+    def generate_batch(
+        self,
+        batch: Sequence[Sequence[Mapping[str, str]]],
+        max_new_tokens: int,
+        sample: bool = False,
+    ) -> List[str]:
+        """Generate one reply per chat in ``batch``.
 
-        input_ids, attention_mask = self._apply_chat_template(messages)
+        ``sample=True`` switches to the retry decode (see
+        :class:`GenerationConfig`); the default is greedy.
+        """
+        if not batch:
+            return []
+
+        texts = [self.render_chat(m) for m in batch]
+        encoded = self.tokenizer(
+            texts, return_tensors="pt", padding=True, add_special_tokens=False,
+        ).to(self.device)
+
         gen = self.config.generation
         gen_kwargs: Dict[str, Any] = {
-            "max_new_tokens": gen.max_new_tokens,
-            "do_sample": gen.do_sample,
-            "pad_token_id": self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
-            "eos_token_id": self.tokenizer.eos_token_id,
-            "attention_mask": attention_mask,
+            "max_new_tokens": int(max_new_tokens),
+            "pad_token_id": self.tokenizer.pad_token_id,
+            "do_sample": bool(sample or gen.do_sample),
         }
-        if gen.do_sample:
-            gen_kwargs["temperature"] = gen.temperature
-            gen_kwargs["top_p"] = gen.top_p
+        if gen_kwargs["do_sample"]:
+            gen_kwargs["temperature"] = (
+                gen.sample_temperature if sample else gen.temperature
+            )
+            gen_kwargs["top_p"] = gen.sample_top_p if sample else gen.top_p
 
-        output = self.model.generate(input_ids=input_ids, **gen_kwargs)
-        new_tokens = output[0][input_ids.shape[-1]:]
-        return self.tokenizer.decode(new_tokens, skip_special_tokens=True)
+        output = self.model.generate(**encoded, **gen_kwargs)
+
+        # Left padding means every row's prompt ends at the same index,
+        # so the continuation starts at the shared input width.
+        start = encoded["input_ids"].shape[-1]
+        return [
+            self.tokenizer.decode(row[start:], skip_special_tokens=True)
+            for row in output
+        ]
 
 
 __all__ = [
     "DEFAULT_MODEL_NAME",
     "DEFAULT_LOCAL_DIR",
+    "MAX_NEW_TOKENS_CAP",
     "GenerationConfig",
     "LlamaConfig",
     "LlamaModel",

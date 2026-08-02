@@ -18,14 +18,14 @@
 #
 # Outputs:
 #   gemini      experiment_results/task2/gemini/gemini_task2_{prompt,conversation}.json
+#   llama       experiment_results/task2/llama/llama_task2_{prompt,conversation}.json
 #   safeguider  ${RESULTS_DIR}/safeguider_task2.json      (old single-file shape)
-#   llama       ${RESULTS_DIR}/llama_task2.json           (old single-file shape)
 #
-# NOTE: only the Gemini branch has been ported to the two-representation
+# NOTE: Gemini and Llama have been ported to the two-representation
 # schema (enhanced prompt + conversation, one file per representation,
-# resumable). SafeGuider and Llama still write the older single-file
-# `{summary, rewrites}` shape over the enhanced prompt only, and still
-# compute CLIP similarity inline. Use scripts/benchmark_task2_gemini.sh
+# resumable, no CLIP). SafeGuider still writes the older single-file
+# `{summary, rewrites}` shape over the enhanced prompt only and computes
+# CLIP similarity inline. Use scripts/benchmark_task2_{gemini,llama}.sh
 # directly for the current pipeline.
 #
 # Safe Generation Rate (SGR) is NOT computed here - feed the rewritten
@@ -57,23 +57,15 @@ eval_safeguider() {
         --output "${RESULTS_DIR}/safeguider_task2.json"
 }
 
+# Llama and Gemini both have their own scripts: each rewrites the two
+# input representations into one file per representation, which does not
+# fit the single --output shape SafeGuider still uses. Delegate rather
+# than duplicate the flag lists.
 eval_llama() {
-    section "Eval Llama-3.1-8B-Instruct rewriter (Task 2)"
-    require_path "LLAMA_WEIGHTS" "${LLAMA_WEIGHTS}"
-    run_module src.Llama.eval_rewrite \
-        --test "${GUARDCHAT_TEST}" \
-        --split "${GUARDCHAT_TEST_SPLIT}" \
-        --weights "${LLAMA_WEIGHTS}" \
-        --dtype "${DTYPE}" \
-        "${LLM_DEVICE_FLAG[@]}" \
-        --output "${RESULTS_DIR}/llama_task2.json"
+    LLAMA_TEST="${GUARDCHAT_TEST}" \
+    bash "${SCRIPT_DIR}/benchmark_task2_llama.sh" all
 }
 
-# Gemini has its own script - it rewrites both input representations
-# and writes one file per representation under
-# experiment_results/task2/gemini/, so it does not fit the single
-# --output shape the other two still use. Delegate rather than
-# duplicate the flag list.
 eval_gemini() {
     GEMINI_TEST="${GUARDCHAT_TEST}" \
     bash "${SCRIPT_DIR}/benchmark_task2_gemini.sh" all

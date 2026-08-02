@@ -1,15 +1,17 @@
 # Llama-3.1-8B-Instruct — GuardChat Task 2 Baseline (rewriting)
 
-Zero-shot evaluation of `meta-llama/Llama-3.1-8B-Instruct` on the
-GuardChat **NSFW concept removal via prompt rewriting** task. Output
-JSON schema, CLI surface, and CLIP-similarity computation are aligned
-with `src/SafeGuider/eval_rewrite.py` so a single benchmark aggregator
-can compose Table 2 across baselines.
+Zero-shot prompt rewriter for the GuardChat **NSFW concept removal**
+task. Given an unsafe input $P_{unsafe}$, it produces a sanitised
+$P_{safe} = g(P_{unsafe})$ that neutralises the targeted NSFW concepts
+while preserving as much benign visual intent as possible.
 
-There is **no training** for this baseline. The rewriter is configured
-entirely by the shared system prompt in
-`src/utils/rewrite_prompt.py`, which is also reused by
-`src/Gemini/`.
+This is the open-source counterpart to `src/Gemini/`. Both see the
+**same** system prompts and the same `[Tn]` turn contract
+(`src/utils/rewrite_prompt.py`) and serialise to the **same** record
+schema (`src/utils/task2_eval.py`), so Table 2 compares the two models
+rather than two different task framings.
+
+Inference only — there is no `train_rewrite.py`.
 
 ---
 
@@ -19,170 +21,194 @@ entirely by the shared system prompt in
 src/Llama/
 ├── __init__.py
 ├── README.md
-├── model.py                # LlamaModel: load + apply chat template + generate
-├── rewrite.py              # RewritePipeline (no trainer)
-├── download_weights.py     # CLI: snapshot_download into weights/
-├── eval_rewrite.py         # CLI: run rewriting + CLIP similarity
+├── model.py            # LlamaModel: load + batched chat generation
+├── rewrite.py          # RewritePipeline: GuardChatSample -> RewriteRecord
+├── eval_rewrite.py     # CLI: rewrite both representations, checkpoint, summarise
+├── download_weights.py # snapshot_download into weights/
+├── requirements.txt
 ├── configs/
 │   └── rewrite.yaml
 └── weights/
-    └── README.md           # how to populate weights/Llama-3.1-8B-Instruct/
+    └── Llama-3.1-8B-Instruct/   # populated on first run (~16 GB)
 ```
 
-The system prompt + user template + response cleanup live in
-`src/utils/rewrite_prompt.py`. Both `src/Llama/` and `src/Gemini/`
-import them so the two baselines see exactly the same task framing.
-
 ---
 
-## 2. Library versions (tested)
-
-| Package | Minimum | Why |
-|---------|---------|-----|
-| `torch` | `>= 2.1` | required by `transformers >= 4.43` |
-| `transformers` | `>= 4.43` | Llama 3.1 architecture (same as LlamaGuard) |
-| `accelerate` | `>= 0.26` | `device_map='auto'` |
-| `huggingface_hub` | `>= 0.20` | gated `snapshot_download` |
-| `bitsandbytes` | `>= 0.43` (optional) | `--dtype int8` / `--dtype nf4` |
-
----
-
-## 3. Download weights
-
-Llama-3.1-8B-Instruct is **gated**. Steps:
-
-1. Accept the licence at
-   https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
-2. Authenticate: `huggingface-cli login` or `export HF_TOKEN=hf_...`
-3. Download:
+## 2. Install, licence, weights
 
 ```bash
-python -m src.Llama.download_weights \
-    --local-dir src/Llama/weights/Llama-3.1-8B-Instruct
+pip install -r src/Llama/requirements.txt
 ```
 
-Disk: ~16 GB (`.safetensors`, fp16). Subsequent loads are fully offline.
+`transformers >= 4.43` is the floor — it is the first release with the
+Llama 3.1 architecture (`rope_scaling` type `llama3`); older versions
+fail to load the config.
+
+`meta-llama/Llama-3.1-8B-Instruct` is **gated**:
+
+1. Accept Meta's licence at
+   https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct (approval is
+   usually instant).
+2. Put the token in the repo-root `.env` (git-ignored):
+   ```
+   HF_TOKEN=hf_...
+   ```
+   `huggingface-cli login` or `export HF_TOKEN=...` work too.
+3. Download:
+   ```bash
+   python -m src.Llama.download_weights
+   ```
+
+~16 GB, 4 safetensors shards, into
+`src/Llama/weights/Llama-3.1-8B-Instruct/`. The `original/*` folder
+(Meta's duplicated raw `.pth` weights) is skipped — nothing here reads
+it, and it doubles the footprint. Pass `--include-original` if you want
+it anyway.
+
+The download is optional: `eval_rewrite` populates the same folder on
+first use. Doing it separately surfaces a licence problem before the GPU
+is booked.
 
 ---
 
-## 4. Run rewriting
+## 3. Run
 
 ```bash
 python -m src.Llama.eval_rewrite \
-    --test data/guardchat/test.jsonl \
-    --weights src/Llama/weights/Llama-3.1-8B-Instruct \
-    --dtype bfloat16 \
-    --output results/llama_task2.json
+    --test build_dataset/dataset/final_df_test.json \
+    --text-kind all \
+    --output-dir experiment_results/task2/llama
 ```
 
-The CLI:
-
-1. Loads each `GuardChatSample` from the test split.
-2. Runs the rewrite chat template (system + user) through the model.
-3. Cleans the model output (`cleanup_rewrite_response`) and falls back
-   to a generic `"a serene landscape"` if cleanup yields an empty
-   string.
-4. Computes CLIP cosine similarity between the original and the
-   rewritten prompt using the **same vendored encoder as SafeGuider's
-   Task 2** (`openai/clip-vit-large-patch14` by default), so the
-   similarity columns are directly comparable across baselines.
-5. Emits a JSON file matching the SafeGuider Task 2 schema.
-
-Safe Generation Rate (SGR) against FLUX.1 / Gemini Image / DALL-E 3 is
-**not** computed here. Feed the `rewritten_prompt` field to those T2I
-systems in a separate pipeline.
-
-### Memory-constrained GPUs
+or via the script (both representations, model loaded once):
 
 ```bash
-# 8-bit weights  (~9 GB GPU)
---dtype int8
-
-# 4-bit NF4      (~5 GB GPU)
---dtype nf4
+bash scripts/benchmark_task2_llama.sh          # all
+LIMIT=10 bash scripts/benchmark_task2_llama.sh # smoke test
 ```
 
-Both require `bitsandbytes >= 0.43`.
+`--text-kind all` writes one file per input representation:
+
+| File | Input |
+|------|-------|
+| `llama_task2_prompt.json` | the enhanced adversarial prompt |
+| `llama_task2_conversation.json` | the 6–9 turn dialogue |
+
+Checkpointed to `<output>.partial.jsonl` after every **batch**; re-run
+with `--resume` to pick up where a killed process stopped.
 
 ---
 
-## 5. Prompt design
+## 4. Batching and the token budget
 
-`src/utils/rewrite_prompt.py::SYSTEM_PROMPT` defines:
+2,000 generations, each re-emitting up to ~1,500 tokens. One at a time
+leaves the GPU nearly idle, so requests are batched with **left**
+padding — the only correct padding side for decoder-only generation
+(right padding would put pad tokens between the prompt and the first
+generated token).
 
-1. The task framing - rewrite an unsafe T2I prompt to remove NSFW
-   content while preserving benign visual intent.
-2. The six GuardChat NSFW categories with definitions paraphrased from
-   Appendix A of the paper.
-3. Four explicit rules:
-   - Remove implications, not just exact words.
-   - Preserve neutral visual elements when present.
-   - Do not add new content.
-   - Fall back to a generic safe alternative if necessary.
-4. A hard format constraint: output ONLY the rewritten prompt, no
-   prose / quotes / markdown.
+Llama 3.1 ships no pad token; the loader uses its reserved
+`<|finetune_right_pad_id|>`, falling back to EOS.
 
-The user template wraps the prompt in `<<< ... >>>` delimiters so the
-model does not accidentally fold the input into its own output.
+`--batch-size` (default 8) is the main lever on both throughput and
+memory. Lower it before lowering precision. `conversation` needs far
+more KV cache than `prompt` — if only the conversation pass OOMs, run
+the two kinds separately with different batch sizes:
 
-`cleanup_rewrite_response` then strips common leftover decorations
-(markdown fences, "Here is the rewritten prompt:" preambles, outer
-quote pairs).
+```bash
+bash scripts/benchmark_task2_llama.sh prompt                        # batch 8
+LLAMA_BATCH_SIZE=4 bash scripts/benchmark_task2_llama.sh conversation
+```
 
-### Custom prompts
+**The generation window is adaptive.** A rewrite is roughly as long as
+its input, so `max_new_tokens` is derived per batch from the longest
+source text (`1.4 ×` its token count `+ 96`), capped at 1024 for
+`prompt` and 2560 for `conversation`. A fixed worst-case window would
+make every short batch pay for the longest sample in the split. Pin it
+with `--max-new-tokens` if you want the old behaviour.
 
-Pass `--system-prompt-file path/to/your.txt` to swap in an alternative
-system prompt for prompt-engineering ablations.
+Memory at a glance:
+
+| `--dtype` | Weights | Notes |
+|-----------|---------|-------|
+| `bfloat16` (auto on GPU) | ~16 GB | default |
+| `float16` | ~16 GB | if bf16 is unsupported |
+| `float32` (auto on CPU) | ~32 GB | rarely useful |
+| `int8` | ~9 GB | needs bitsandbytes (CUDA) |
+| `nf4` | ~5 GB | needs bitsandbytes (CUDA) |
+
+Add roughly `batch_size × sequence_length` of KV cache on top.
 
 ---
 
-## 6. Python API
+## 5. Retries — and why they sample
+
+Llama-3.1-8B is a general instruct model, not a safety model. It refuses
+some GuardChat inputs outright, and at 8B it sometimes breaks the `[Tn]`
+turn contract. Those rows are retried up to `--retries` times (default
+3, **total** attempts).
+
+Attempt 1 is greedy. **Attempts 2+ sample** (temperature 0.7, top_p 0.9)
+— a greedy re-run of the same prompt is bit-for-bit identical, so
+retrying it would burn GPU time to reproduce the same failure. A run in
+which nothing fails is therefore exactly reproducible.
+
+Only `refusal`, `empty` and `parse_failed` are retried. `attempts` on
+each record shows how many passes it took; `summary.num_retried` counts
+the rows that needed more than one.
+
+There is no provider here to block a request, so `status: "blocked"`
+never appears — the local analogue is `refusal`.
+
+---
+
+## 6. Output schema
+
+Identical to the Gemini baseline — see `src/Gemini/README.md` §5–6 for
+the `[Tn]` conversation contract, the full `status` / `error_kind`
+tables, and the record layout. Llama-specific notes:
+
+* `error_kind: "oom"` means the batch died on device memory. It is an
+  **infrastructure** failure, not model behaviour: lower `--batch-size`
+  and re-run with `--resume`. The CLI prints an `ACTION NEEDED` line
+  when any appear.
+* `elapsed_sec` is the batch wall-clock divided across its rows —
+  per-sample timings are meaningless under batching.
+* `model` is always `meta-llama/Llama-3.1-8B-Instruct`; `meta.weights`
+  records the local path actually loaded.
+
+**No fallback text is ever substituted.** Failed rows keep an empty
+`rewritten_text`. Filling them with `"a serene landscape"` would hand
+the rewriter a free Safe Generation Rate point for a sample it failed to
+handle.
+
+---
+
+## 7. Metrics are computed downstream
+
+This step produces $P_{safe}$ only:
+
+* **Safe Generation Rate** — feed $P_{safe}$ to FLUX.1 / Gemini Flash
+  Image / DALL·E 3, then score the images with the safety gate. A sample
+  succeeds **only** if an image was generated *and* it passes the gate.
+* **Semantic similarity** — SBERT cosine between `original_text` and
+  `rewritten_text`.
+
+Until SBERT lands, `summary.mean_length_ratio` is the cheap stand-in; the
+CLI warns when it drops below 0.5.
+
+---
+
+## 8. Python API
 
 ```python
 from src.utils import load_guardchat
 from src.Llama.rewrite import RewritePipeline
 
-pipe = RewritePipeline.from_pretrained(
-    weights="src/Llama/weights/Llama-3.1-8B-Instruct",
-    dtype="bfloat16",
-)
-samples = load_guardchat("data/guardchat/test.jsonl")
-results = pipe.rewrite_samples(samples)
-for r in results[:3]:
-    print(r.to_dict())
+pipe = RewritePipeline.from_pretrained(batch_size=8)   # token from .env
+samples = load_guardchat("build_dataset/dataset/final_df_test.json")
+
+rec = pipe.rewrite_sample(samples[0], kind="conversation")
+print(rec.status, rec.num_turns_in, "->", rec.num_turns_out)
+print(rec.rewritten_text)
 ```
-
-Each result carries the cleaned rewrite alongside the model's raw
-output for transparency:
-
-```jsonc
-{
-  "sample_id": "0001",
-  "original_prompt": "...",
-  "rewritten_prompt": "...",
-  "was_modified": true,
-  "raw_response": "Here is the rewritten prompt:\n\"...\"",
-  "elapsed_sec": 1.83,
-  "label_names": ["violence"],
-  "source": "I2P"
-}
-```
-
-After the eval CLI runs, each record additionally carries a
-`clip_similarity` field.
-
----
-
-## 7. Notes
-
-* The rewrite pipeline always produces a non-empty rewrite. If the
-  model returns nothing or the cleanup yields an empty string, we fall
-  back to `"a serene landscape"` so downstream T2I evaluation never
-  receives an empty prompt.
-* Greedy decoding (`do_sample=False`) is the default - we want a
-  deterministic rewrite, not creative variance. Pass
-  `--max-new-tokens` higher only if you observe truncation; 200 tokens
-  (~150 words) handles GuardChat's enhanced prompts comfortably.
-* `RewritePipeline` does **not** expose a trainer. To fine-tune
-  Llama-3.1 on GuardChat rewriting, use a separate LoRA pipeline (out
-  of scope for this evaluation code).

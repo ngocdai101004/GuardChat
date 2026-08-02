@@ -1,30 +1,66 @@
 # Llama-3.1-8B-Instruct - Task 2 (NSFW Concept Removal via Prompt Rewriting).
 #
 # Loaded from a local snapshot under weights/. Inference only - the
-# rewriter is configured entirely by the shared system prompt in
-# src/utils/rewrite_prompt.py.
+# rewriter is configured entirely by the shared system prompts in
+# src/utils/rewrite_prompt.py, the same ones the Gemini baseline uses.
+#
+# This file documents the defaults of
+# `python -m src.Llama.eval_rewrite`; the CLI flags are the source of
+# truth.
+#
+# meta-llama/Llama-3.1-8B-Instruct is GATED: accept the licence on the
+# model page, then put HF_TOKEN=hf_... in the repo-root .env.
 #
 # Library versions (tested):
 #   torch              >= 2.1
 #   transformers       >= 4.43        (Llama 3.1 architecture)
 #   accelerate         >= 0.26
-#   huggingface_hub    >= 0.20        (snapshot_download)
-#   bitsandbytes       >= 0.43        (only for dtype: int8 / nf4)
+#   huggingface_hub    >= 0.23        (snapshot_download)
+#   bitsandbytes       >= 0.43        (only for dtype: int8 / nf4, CUDA)
 
 data:
-  test: data/guardchat/test.jsonl
+  test: build_dataset/dataset/final_df_test.json
+  text_kind: all                      # 'prompt' | 'conversation' | 'all'
+                                      # prompt       -> the enhanced adversarial prompt
+                                      # conversation -> the 6-9 turn dialogue, sent as a
+                                      #                 [T1]..[Tn] block and parsed back
+                                      #                 into turns
 
 model:
-  weights: src/Llama/weights/Llama-3.1-8B-Instruct
-  dtype: bfloat16                     # bfloat16 | float16 | float32 | int8 | nf4
-  device: null                        # null = device_map='auto'
+  weights: src/Llama/weights/Llama-3.1-8B-Instruct   # fetched on first run
+  repo_id: meta-llama/Llama-3.1-8B-Instruct          # source of that snapshot
+  auto_download: true                 # populate `weights` when it is empty
+  dtype: auto                         # auto | bfloat16 | float16 | float32 | int8 | nf4
+  device: auto                        # auto | cuda | mps | cpu
+  batch_size: 8                       # sequences generated together; the main lever on
+                                      # throughput AND on memory. Lower this before
+                                      # lowering precision - 'conversation' needs far
+                                      # more KV cache than 'prompt'
 
 generation:
-  max_new_tokens: 200                 # rewritten prompts rarely exceed ~150 words
-  do_sample: false                    # deterministic rewrites
-
-clip_encoder:
-  model_name: openai/clip-vit-large-patch14   # same as SafeGuider Task 2
+  do_sample: false                    # attempt 1 is greedy => reproducible
+  max_new_tokens: null                # null = adaptive: derived per batch from the
+                                      # longest source text (a rewrite is about as long
+                                      # as its input), capped per representation at
+                                      #   prompt: 1024, conversation: 2560
+  retries: 3                          # TOTAL attempts per sample. Attempts after the
+                                      # first switch to sampled decoding
+                                      # (temperature 0.7, top_p 0.9) - re-running a
+                                      # greedy generation is bit-for-bit identical and
+                                      # could only reproduce the same failure.
+                                      # Only refusal / empty / parse_failed are retried.
 
 output:
-  results: results/llama_task2.json
+  dir: experiment_results/task2/llama
+  files:
+    - llama_task2_prompt.json
+    - llama_task2_conversation.json
+
+# Metrics are NOT computed here. This step produces P_safe only.
+#   Safe Generation Rate  -> feed `rewritten_text` to FLUX.1 /
+#                            Gemini Flash Image / DALL-E 3, then score the
+#                            images with the safety gate. Rows whose
+#                            `status` is not `ok` never reach a T2I model
+#                            and count as failures.
+#   Semantic similarity   -> SBERT cosine between `original_text` and
+#                            `rewritten_text` (replaces CLIP).
