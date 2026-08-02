@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import statistics
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.utils.metrics import summarise_similarity
@@ -173,6 +174,11 @@ def score_records(
         ]
         entry["similarity_per_turn"] = sum(sims) / n
         entry["min_turn_similarity"] = min(sims)
+        # The whole vector, not just its mean and min: GuardChat dialogues
+        # escalate, so *where* in the dialogue a rewriter cut matters as
+        # much as how deep. Cheap to keep (~8 floats per row) and there is
+        # no way to recover it later without re-encoding everything.
+        entry["turn_similarities"] = [round(s, 6) for s in sims]
         entry["turn_truncated"] = any(
             lengths[t_base + j] > limit for j in range(2 * n)
         )
@@ -227,6 +233,7 @@ def summarise_scores(
                 e["min_turn_similarity"] for e in scored
                 if e.get("min_turn_similarity") is not None
             ) / len(per_turn),
+            "by_position": _by_position(scored),
         }
 
     by_cat: Dict[str, List[float]] = {}
@@ -241,6 +248,66 @@ def summarise_scores(
         }
 
     return _round_floats(summary)
+
+
+# Turns 1-3 open the dialogue, 4-6 develop it, 7+ is where GuardChat's
+# attacks land. Absolute indices rather than percentiles: the dialogues
+# run 6-9 turns, so "turn 7" means the same thing in all of them, whereas
+# "the last 20%" would mean turn 5 in one sample and turn 8 in another.
+TURN_CHUNKS = ((0, 3, "turns_1_3"), (3, 6, "turns_4_6"), (6, None, "turns_7_plus"))
+
+
+def _by_position(scored: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    """Mean turn similarity per chunk of the dialogue, plus a paired delta.
+
+    The chunk means alone are confounded: only dialogues of 7+ turns
+    contribute to the last chunk, so a difference between chunk 1 and
+    chunk 3 could be a property of long dialogues rather than of
+    position. ``paired_last_minus_first`` removes that - it averages
+    (chunk 3 - chunk 1) *within* each dialogue that has both, so every
+    sample is compared against itself.
+    """
+    buckets: Dict[str, List[float]] = {name: [] for _, _, name in TURN_CHUNKS}
+    dialogues: Dict[str, int] = {name: 0 for _, _, name in TURN_CHUNKS}
+    paired: List[float] = []
+
+    for entry in scored:
+        sims = entry.get("turn_similarities")
+        if not sims:
+            continue
+        means: Dict[str, float] = {}
+        for start, stop, name in TURN_CHUNKS:
+            seg = sims[start:stop] if stop is not None else sims[start:]
+            if not seg:
+                continue
+            buckets[name].extend(float(s) for s in seg)
+            dialogues[name] += 1
+            means[name] = statistics.fmean(seg)
+        if "turns_1_3" in means and "turns_7_plus" in means:
+            paired.append(means["turns_7_plus"] - means["turns_1_3"])
+
+    out: Dict[str, Any] = {}
+    for _start, _stop, name in TURN_CHUNKS:
+        vals = buckets[name]
+        if not vals:
+            continue
+        out[name] = {
+            "mean": round(statistics.fmean(vals), 6),
+            "median": round(statistics.median(vals), 6),
+            "std": round(statistics.pstdev(vals), 6) if len(vals) > 1 else 0.0,
+            "fraction_below_0.7": round(
+                sum(1 for v in vals if v < 0.7) / len(vals), 6),
+            "num_turns": len(vals),
+            "num_dialogues": dialogues[name],
+        }
+    if paired:
+        out["paired_last_minus_first"] = {
+            "mean": round(statistics.fmean(paired), 6),
+            "num_dialogues": len(paired),
+            "fraction_negative": round(
+                sum(1 for v in paired if v < 0) / len(paired), 6),
+        }
+    return out
 
 
 def _round_floats(obj: Any, places: int = 6) -> Any:

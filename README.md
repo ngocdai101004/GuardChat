@@ -445,6 +445,10 @@ failures.
 
 ### Semantic similarity (SBERT)
 
+Full analysis of both metrics across both baselines and both
+representations, including the per-turn breakdown:
+**[docs/Review_Task_2.md](docs/Review_Task_2.md)**.
+
 The second Task-2 metric **is** computed here, offline, from the same
 `rewritten_text` field:
 
