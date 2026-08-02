@@ -9,7 +9,7 @@
 # Targets:
 #   safeguider  (beam-search rewriter, needs SD1.4_safeguider.pt locally)
 #   llama       (Llama-3.1-8B-Instruct, needs local snapshot)
-#   gemini      (Gemini 2.5 Flash API, needs GEMINI_API_KEY env var)
+#   gemini      (Gemini Flash API, needs GEMINI_API_KEY - env or .env)
 #   all         shorthand for safeguider llama gemini
 #
 # Inputs (override via env):
@@ -17,15 +17,20 @@
 #   GUARDCHAT_TEST_SPLIT   default: test
 #
 # Outputs:
-#   ${RESULTS_DIR}/{safeguider,llama,gemini}_task2.json
+#   gemini      experiment_results/task2/gemini/gemini_task2_{prompt,conversation}.json
+#   safeguider  ${RESULTS_DIR}/safeguider_task2.json      (old single-file shape)
+#   llama       ${RESULTS_DIR}/llama_task2.json           (old single-file shape)
 #
-# Each output JSON has:
-#   { "summary": {...},
-#     "rewrites": [ {original_prompt, rewritten_prompt, clip_similarity, ...}, ... ] }
+# NOTE: only the Gemini branch has been ported to the two-representation
+# schema (enhanced prompt + conversation, one file per representation,
+# resumable). SafeGuider and Llama still write the older single-file
+# `{summary, rewrites}` shape over the enhanced prompt only, and still
+# compute CLIP similarity inline. Use scripts/benchmark_task2_gemini.sh
+# directly for the current pipeline.
 #
-# Safe Generation Rate (SGR) is NOT computed here - feed the
-# `rewritten_prompt` field from these JSONs to FLUX.1 / Gemini Image /
-# DALL-E 3 in a separate pipeline and compute SGR externally.
+# Safe Generation Rate (SGR) is NOT computed here - feed the rewritten
+# text to FLUX.1 / Gemini Flash Image / DALL-E 3 in a separate pipeline
+# and score the images with the safety gate.
 
 set -euo pipefail
 
@@ -64,18 +69,14 @@ eval_llama() {
         --output "${RESULTS_DIR}/llama_task2.json"
 }
 
+# Gemini has its own script - it rewrites both input representations
+# and writes one file per representation under
+# experiment_results/task2/gemini/, so it does not fit the single
+# --output shape the other two still use. Delegate rather than
+# duplicate the flag list.
 eval_gemini() {
-    section "Eval Gemini 2.5 Flash rewriter (Task 2)"
-    if [[ -z "${GEMINI_API_KEY:-}" && -z "${GOOGLE_API_KEY:-}" ]]; then
-        echo "ERROR: Gemini requires GEMINI_API_KEY or GOOGLE_API_KEY in the env." >&2
-        echo "       Get a key at https://aistudio.google.com/." >&2
-        return 1
-    fi
-    run_module src.Gemini.eval_rewrite \
-        --test "${GUARDCHAT_TEST}" \
-        --split "${GUARDCHAT_TEST_SPLIT}" \
-        --model "${GEMINI_MODEL:-gemini-2.5-flash}" \
-        --output "${RESULTS_DIR}/gemini_task2.json"
+    GEMINI_TEST="${GUARDCHAT_TEST}" \
+    bash "${SCRIPT_DIR}/benchmark_task2_gemini.sh" all
 }
 
 for tgt in "${TARGETS[@]}"; do

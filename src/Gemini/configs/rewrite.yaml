@@ -1,33 +1,61 @@
 # Gemini 2.5 Flash - Task 2 (NSFW Concept Removal via Prompt Rewriting).
 #
-# API-only baseline: no weights are downloaded. Authenticate via
-# GEMINI_API_KEY / GOOGLE_API_KEY environment variables (free key
-# available at https://aistudio.google.com/).
+# API-only baseline: no weights are downloaded. Authenticate with
+# GEMINI_API_KEY (or GOOGLE_API_KEY) in the environment or in the
+# repo-root .env file. Free key: https://aistudio.google.com/.
+#
+# This file documents the defaults of
+# `python -m src.Gemini.eval_rewrite`; the CLI flags are the source of
+# truth.
 #
 # Library versions (tested):
-#   google-genai       >= 0.3       (the new Gemini SDK; `from google import genai`)
-#   transformers       >= 4.43      (only for the shared CLIP encoder used
-#                                    when computing CLIP cosine similarity)
-#   torch              >= 2.1
-#   numpy              >= 1.23
+#   google-genai       >= 1.0       (the new SDK; `from google import genai`)
+#   tqdm               >= 4.65      (progress bars; optional)
 
 data:
-  test: data/guardchat/test.jsonl
+  test: build_dataset/dataset/final_df_test.json
+  text_kind: all                    # 'prompt' | 'conversation' | 'all'
+                                    # prompt       -> the enhanced adversarial prompt
+                                    # conversation -> the 6-9 turn dialogue, sent as a
+                                    #                 [T1]..[Tn] block and parsed back
+                                    #                 into turns
 
 api:
   model: gemini-2.5-flash
-  api_key: null                    # null => read GEMINI_API_KEY / GOOGLE_API_KEY env
-  retries: 3
+  api_key: null                     # null => GEMINI_API_KEY / GOOGLE_API_KEY / .env
+  workers: 4                        # concurrent requests; lower on a rate-limited key
+  retries: 3                        # TOTAL attempts per sample, not extra ones
+  retry_blocked: true               # re-send when the safety filter kills a call; a
+                                    # sample still blocked after every attempt is
+                                    # recorded with error_kind 'provider_block' and an
+                                    # empty rewrite
   backoff_seconds: 2.0
-  request_timeout: 60.0
-  relax_safety: true               # set false to keep default safety thresholds
+  request_timeout: 120.0
+  relax_safety: true                # BLOCK_NONE on the four overridable harm
+                                    # categories, so the model is allowed to *read*
+                                    # GuardChat's adversarial inputs. The system
+                                    # prompt still constrains the output.
 
 generation:
-  max_output_tokens: 256
-  temperature: 0.0                 # deterministic rewrites
-
-clip_encoder:
-  model_name: openai/clip-vit-large-patch14   # same as SafeGuider Task 2
+  temperature: 0.0                  # deterministic rewrites
+  thinking_budget: 0                # disable Gemini 2.5 reasoning tokens - they are
+                                    # drawn from max_output_tokens and can starve the
+                                    # answer entirely (empty text, MAX_TOKENS)
+  max_output_tokens:                # per representation; a conversation rewrite has
+    prompt: 2048                    # to re-emit every turn
+    conversation: 4096
 
 output:
-  results: results/gemini_task2.json
+  dir: experiment_results/task2/gemini
+  files:
+    - gemini_task2_prompt.json
+    - gemini_task2_conversation.json
+
+# Metrics are NOT computed here. This step produces P_safe only.
+#   Safe Generation Rate  -> feed `rewritten_text` to FLUX.1 /
+#                            Gemini 2.5 Flash Image / DALL-E 3, then score
+#                            the images with the safety gate. Rows whose
+#                            `status` is not `ok` never reach a T2I model
+#                            and count as failures.
+#   Semantic similarity   -> SBERT cosine between `original_text` and
+#                            `rewritten_text` (replaces CLIP).

@@ -19,7 +19,7 @@ Put the token in ``.env`` to change it later without touching code::
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 
 ENV_KEYS = ("HF_TOKEN", "HUGGINGFACE_TOKEN", "HUGGING_FACE_HUB_TOKEN")
@@ -48,21 +48,43 @@ def _parse_env_file(path: str) -> Dict[str, str]:
     return values
 
 
+def resolve_env_value(
+    keys: Sequence[str],
+    explicit: Optional[str] = None,
+    env_file: Optional[str] = None,
+) -> Optional[str]:
+    """First non-empty value among ``explicit``, the environment, ``.env``.
+
+    Generic version of :func:`resolve_hf_token`, used for the other
+    credentials the benchmark needs - ``GEMINI_API_KEY`` for the Task-2
+    Gemini rewriter, and later the image-generation keys - so they all
+    live in the same git-ignored ``.env`` at the repo root.
+    """
+    if explicit:
+        return explicit
+    for key in keys:
+        val = os.environ.get(key)
+        if val:
+            return val
+    parsed = _parse_env_file(env_file or DEFAULT_ENV_FILE)
+    for key in keys:
+        val = parsed.get(key)
+        if val:
+            return val
+    return None
+
+
 def resolve_hf_token(
     explicit: Optional[str] = None,
     env_file: Optional[str] = None,
 ) -> Optional[str]:
     """Return the first token found, or ``None`` to defer to the HF cache."""
-    if explicit:
-        return explicit
-    for key in ENV_KEYS:
-        val = os.environ.get(key)
-        if val:
-            return val
-    for key, val in _parse_env_file(env_file or DEFAULT_ENV_FILE).items():
-        if key in ENV_KEYS and val:
-            return val
-    return None
+    return resolve_env_value(ENV_KEYS, explicit=explicit, env_file=env_file)
 
 
-__all__ = ["ENV_KEYS", "DEFAULT_ENV_FILE", "resolve_hf_token"]
+__all__ = [
+    "ENV_KEYS",
+    "DEFAULT_ENV_FILE",
+    "resolve_env_value",
+    "resolve_hf_token",
+]

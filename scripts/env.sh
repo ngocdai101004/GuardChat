@@ -96,6 +96,25 @@ require_path() {
     fi
 }
 
+# Confirm a Gemini API key is reachable before any call is billed. The
+# Python side also reads the repo-root .env, so a key living only there
+# is fine - this just avoids a confusing traceback when it is missing
+# everywhere.
+require_gemini_key() {
+    if [[ -n "${GEMINI_API_KEY:-}" || -n "${GOOGLE_API_KEY:-}" ]]; then
+        return 0
+    fi
+    if [[ -f "${REPO_ROOT}/.env" ]] \
+            && grep -qE '^[[:space:]]*(GEMINI|GOOGLE)_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]]' \
+                    "${REPO_ROOT}/.env"; then
+        return 0
+    fi
+    echo "ERROR: no Gemini API key found." >&2
+    echo "Hint: export GEMINI_API_KEY=... or add GEMINI_API_KEY=... to ${REPO_ROOT}/.env" >&2
+    echo "      Get a key at https://aistudio.google.com/." >&2
+    return 1
+}
+
 # Sanity-check a GuardChat data source. Accepts a local file OR a
 # HuggingFace repo id (string containing "/" but not starting with "/"
 # or "./" and without a file extension).

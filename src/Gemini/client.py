@@ -45,7 +45,16 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
 
-DEFAULT_MODEL_NAME = "gemini-2.5-flash"
+# The paper names *Gemini 2.5 Flash* as the proprietary Task-2 rewriter,
+# but ``gemini-2.5-flash`` (and ``-flash-lite``, and the whole 2.0 line)
+# now answers 404 "no longer available to new users" for API keys issued
+# after its retirement - the id is still listed by ``models.list()``,
+# which is why the failure only shows up at generate time. The default
+# is therefore the current Flash tier, pinned to a concrete version
+# rather than the drifting ``gemini-flash-latest`` alias so a benchmark
+# run stays reproducible. Override with ``--model`` if your key still
+# has 2.5 access; whatever is used is recorded in the output's ``meta``.
+DEFAULT_MODEL_NAME = "gemini-3.5-flash"
 
 
 # Categories that the Gemini Developer API allows callers to override.
@@ -75,17 +84,24 @@ def _import_genai():
     return genai, types
 
 
+API_KEY_ENV_KEYS = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
+
+
 def _resolve_api_key(explicit: Optional[str]) -> str:
-    if explicit:
-        return explicit
-    for var in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
-        v = os.environ.get(var)
-        if v:
-            return v
+    """Explicit argument, then the environment, then the repo-root ``.env``.
+
+    Same resolution order the gated HuggingFace repos use, so every
+    credential in this benchmark lives in one git-ignored file.
+    """
+    from src.utils.hf_token import resolve_env_value
+
+    key = resolve_env_value(API_KEY_ENV_KEYS, explicit=explicit)
+    if key:
+        return key
     raise RuntimeError(
-        "No Gemini API key found. Pass --api-key or set GEMINI_API_KEY / "
-        "GOOGLE_API_KEY in the environment. Get a key at "
-        "https://aistudio.google.com/."
+        "No Gemini API key found. Pass --api-key, set GEMINI_API_KEY / "
+        "GOOGLE_API_KEY in the environment, or add GEMINI_API_KEY=... to "
+        "the repo-root .env file. Get a key at https://aistudio.google.com/."
     )
 
 
@@ -95,19 +111,44 @@ class GenerationConfig:
 
     Greedy decoding (``temperature=0``) is the default - we want a
     deterministic, structured rewrite, not creative variance.
+
+    ``thinking_budget=0`` disables Gemini 2.5's reasoning tokens. This is
+    not an optimisation, it is a correctness fix: reasoning tokens are
+    drawn from the same ``max_output_tokens`` pool as the answer, so with
+    thinking left on its default the model can spend the whole budget
+    deliberating and return an empty response with
+    ``finish_reason=MAX_TOKENS``. Sanitising a prompt is a rewriting
+    task, not a reasoning one. Set it to ``None`` to leave the model
+    default in place.
     """
 
-    max_output_tokens: int = 256
+    max_output_tokens: int = 2048
     temperature: float = 0.0
     top_p: float = 1.0
+    thinking_budget: Optional[int] = 0
 
 
 @dataclass
 class GeminiClientConfig:
+    """Per-run client settings.
+
+    ``retries`` is the total number of attempts per sample, not the
+    number of extra ones: ``retries=3`` means three calls at most.
+
+    ``retry_blocked`` also re-sends a request the safety filter killed,
+    and a request that came back empty. At ``temperature=0`` a re-send
+    is usually deterministic and blocks the same way, so this rarely
+    rescues a sample - but Google's filter is not perfectly stable, the
+    cost of finding out is three calls on a handful of rows, and a
+    sample that survives three blocks is a much stronger claim to put in
+    the paper than one that survived a single call.
+    """
+
     model_name: str = DEFAULT_MODEL_NAME
     api_key: Optional[str] = None
     relax_safety: bool = True
     retries: int = 3
+    retry_blocked: bool = True
     backoff_seconds: float = 2.0
     request_timeout: Optional[float] = 60.0
     generation: GenerationConfig = field(default_factory=GenerationConfig)
@@ -121,6 +162,8 @@ class GeminiResponse:
     blocked: bool                       # True if Gemini's safety filter killed it.
     block_reason: Optional[str] = None  # e.g. "PROHIBITED_CONTENT", "SAFETY"
     finish_reason: Optional[str] = None
+    truncated: bool = False             # hit max_output_tokens mid-answer
+    attempts: int = 1                   # calls made, including retries
     raw: Any = None                     # original SDK response object (debug only)
 
 
@@ -134,7 +177,10 @@ class GeminiClient:
         self._types = types
 
         api_key = _resolve_api_key(config.api_key)
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key,
+            **self._client_kwargs(config.request_timeout),
+        )
 
         # Safety overrides: BLOCK_NONE lets the model see adversarial
         # GuardChat inputs and emit a sanitised rewrite per the system
@@ -145,6 +191,18 @@ class GeminiClient:
         )
 
     # ----------------------- Setup helpers -------------------------- #
+
+    def _client_kwargs(self, request_timeout: Optional[float]) -> Dict[str, Any]:
+        """Per-request HTTP timeout, in the shape the SDK wants (ms)."""
+        if not request_timeout:
+            return {}
+        try:
+            return {"http_options": self._types.HttpOptions(
+                timeout=int(float(request_timeout) * 1000)
+            )}
+        except (AttributeError, TypeError, ValueError):
+            # Older SDKs without HttpOptions - fall back to the default.
+            return {}
 
     def _build_safety_settings(self):
         types = self._types
@@ -172,7 +230,61 @@ class GeminiClient:
         }
         if self._safety_settings:
             kwargs["safety_settings"] = self._safety_settings
+        if gen.thinking_budget is not None:
+            try:
+                kwargs["thinking_config"] = types.ThinkingConfig(
+                    thinking_budget=int(gen.thinking_budget)
+                )
+            except (AttributeError, TypeError, ValueError):
+                # Model or SDK without a configurable thinking budget.
+                pass
         return types.GenerateContentConfig(**kwargs)
+
+    # --------------------------- Preflight -------------------------- #
+
+    def preflight(self) -> None:
+        """One trivial call, so a bad model id fails now rather than 1,000
+        times.
+
+        A retired model id is not a transient error and is not retried,
+        so without this the whole run completes "successfully" with every
+        record carrying ``status='error'``. Raises :class:`RuntimeError`
+        with the ids the key can actually use.
+        """
+        try:
+            self._client.models.generate_content(
+                model=self.config.model_name,
+                contents="Reply with OK.",
+            )
+        except Exception as e:  # noqa: BLE001 - re-raised with context
+            msg = str(e)
+            if "404" not in msg and "NOT_FOUND" not in msg:
+                raise RuntimeError(
+                    f"Gemini preflight failed for {self.config.model_name!r}: {e}"
+                ) from e
+            raise RuntimeError(
+                f"Gemini rejected the model id {self.config.model_name!r}:\n"
+                f"  {msg}\n"
+                f"Available to this key: {', '.join(self.available_models()) or '(none)'}\n"
+                f"Pass a different --model."
+            ) from e
+
+    def available_models(self, contains: str = "flash") -> List[str]:
+        """Model ids this key may call, filtered by substring.
+
+        Best-effort: ``models.list`` advertises ids that ``generate_content``
+        then refuses, so this is a hint for the error message, not a
+        guarantee.
+        """
+        try:
+            return [
+                m.name.split("/")[-1]
+                for m in self._client.models.list()
+                if contains in (m.name or "")
+                and "generateContent" in (getattr(m, "supported_actions", None) or [])
+            ]
+        except Exception:  # noqa: BLE001 - diagnostics only
+            return []
 
     # ---------------------------- Generate -------------------------- #
 
@@ -181,39 +293,71 @@ class GeminiClient:
         user_prompt: str,
         system_instruction: str,
     ) -> GeminiResponse:
-        """Run one ``generate_content`` call with retry-on-transient-error.
+        """Run ``generate_content``, retrying up to ``config.retries`` times.
 
-        Retries trigger on HTTP 429 / 5xx / network exceptions; safety
-        blocks are returned as a populated :class:`GeminiResponse` and
-        not retried (re-running with the same input would not change
-        the verdict).
+        Three things are retried, each with exponential backoff:
+
+        * transient exceptions - HTTP 429 / 5xx, quota, timeouts, network;
+        * safety blocks, when ``config.retry_blocked`` is set;
+        * responses that came back with no text at all.
+
+        A sample that is still blocked after the last attempt is returned
+        as a populated :class:`GeminiResponse` with ``blocked=True`` and
+        the attempt count, not raised - the caller records it as a real
+        result rather than an infrastructure failure. Anything that keeps
+        raising is re-raised so the caller can classify the exception.
+
+        Non-transient exceptions (a rejected model id, a bad key) are
+        *not* retried: they would fail identically every time and the
+        run should stop, not burn its budget.
         """
         cfg = self._build_generate_config(system_instruction)
+        max_attempts = max(1, self.config.retries)
         last_exc: Optional[Exception] = None
-        for attempt in range(max(1, self.config.retries)):
+        last_response: Optional[GeminiResponse] = None
+
+        for attempt in range(max_attempts):
+            is_last = (attempt + 1 >= max_attempts)
             try:
                 response = self._client.models.generate_content(
                     model=self.config.model_name,
                     contents=user_prompt,
                     config=cfg,
                 )
-                return self._decode(response)
             except Exception as e:  # noqa: BLE001 - SDK raises a wide tree
                 last_exc = e
-                msg = str(e).lower()
-                if attempt + 1 >= self.config.retries:
+                if is_last or not self._is_transient(str(e).lower()):
                     break
-                if self._is_transient(msg):
-                    sleep_s = self.config.backoff_seconds * (2 ** attempt)
-                    time.sleep(sleep_s)
-                    continue
-                # Non-transient: bail immediately.
-                break
+                time.sleep(self.config.backoff_seconds * (2 ** attempt))
+                continue
 
+            decoded = self._decode(response)
+            decoded.attempts = attempt + 1
+            last_response = decoded
+            last_exc = None
+
+            if not self._should_retry_response(decoded) or is_last:
+                return decoded
+            time.sleep(self.config.backoff_seconds * (2 ** attempt))
+
+        if last_response is not None:
+            last_response.attempts = max_attempts
+            return last_response
         if last_exc is not None:
             raise last_exc
         # Should be unreachable, but keep mypy happy:
         raise RuntimeError("Gemini generate_content returned no result.")
+
+    def _should_retry_response(self, resp: "GeminiResponse") -> bool:
+        """True when a *successful* call produced nothing usable.
+
+        A truncated answer is deliberately not retried - the same
+        ``max_output_tokens`` would truncate it again. Raise the budget
+        instead.
+        """
+        if resp.blocked:
+            return bool(self.config.retry_blocked)
+        return not (resp.text or "").strip() and not resp.truncated
 
     # ----------------------- Response decoding ---------------------- #
 
@@ -221,9 +365,10 @@ class GeminiClient:
     def _is_transient(msg: str) -> bool:
         """Return True for retry-eligible error messages."""
         markers = (
-            "429", "rate limit", "rate-limit",
-            "500", "502", "503", "504",
-            "deadline", "timeout", "temporarily unavailable",
+            "429", "rate limit", "rate-limit", "quota", "resource_exhausted",
+            "500", "502", "503", "504", "internal error",
+            "deadline", "timeout", "timed out", "connection",
+            "unavailable", "overloaded",
         )
         return any(m in msg for m in markers)
 
@@ -235,6 +380,7 @@ class GeminiClient:
         blocked = False
         block_reason: Optional[str] = None
         finish_reason: Optional[str] = None
+        truncated = False
 
         # The SDK exposes ``.text`` on simple successes.
         try:
@@ -258,11 +404,16 @@ class GeminiClient:
                 text = "".join(fragments)
 
             # finish_reason in {"SAFETY","PROHIBITED_CONTENT","SPII",...}
-            if finish_reason and finish_reason.upper() in {
-                "SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII",
-            }:
+            reason = (finish_reason or "").upper()
+            if reason in {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII",
+                          "RECITATION", "IMAGE_SAFETY"}:
                 blocked = True
                 block_reason = finish_reason
+            elif reason == "MAX_TOKENS":
+                # A rewrite that stops mid-sentence is not a usable
+                # P_safe. Surface it rather than letting a half-prompt
+                # through as if it were complete.
+                truncated = True
 
         # Prompt-level blocks land on ``response.prompt_feedback``.
         pf = getattr(response, "prompt_feedback", None)
@@ -277,6 +428,7 @@ class GeminiClient:
             blocked=blocked,
             block_reason=block_reason,
             finish_reason=finish_reason,
+            truncated=truncated,
             raw=response,
         )
 

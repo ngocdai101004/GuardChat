@@ -20,7 +20,8 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | `benchmark_task1_llamaguard.sh` | Llama-Guard-3-8B alone, over the three input representations. Weights auto-download into `src/LlamaGuard/weights/`. See `docs/task1-llamaguard.md`. |
 | `benchmark_task1_shieldgemma.sh` | ShieldGemma-2B alone, same three representations. See `docs/task1-shieldhgemma.md`. |
 | `benchmark_task1_qwen3guard.sh` | Qwen3Guard-Gen-8B alone, same three representations. Ungated repo, so no HF token needed. See `docs/task1-qwen3guard.md`. |
-| `benchmark_task2.sh` | Evaluate Task 2 across the three baselines (SafeGuider beam-search, Llama-3.1-8B, Gemini 2.5 Flash API). |
+| `benchmark_task2.sh` | Evaluate Task 2 across the three baselines (SafeGuider beam-search, Llama-3.1-8B, Gemini Flash API). |
+| `benchmark_task2_gemini.sh` | Gemini Flash alone, over both Task-2 representations (enhanced prompt + conversation). Resumable; API key from env or `.env`. See `src/Gemini/README.md`. |
 | `benchmark_all.sh` | End-to-end: train + Task 1 + Task 2. `SKIP_TRAIN=1` to skip the training step. |
 
 ## Common usage
@@ -36,8 +37,11 @@ bash scripts/benchmark_all.sh
 # Subset: only the zero-shot Task-1 baselines
 bash scripts/benchmark_task1.sh llamaguard qwen
 
-# Subset: only Gemini for Task 2
-bash scripts/benchmark_task2.sh gemini
+# Subset: only Gemini for Task 2 (both representations)
+bash scripts/benchmark_task2_gemini.sh
+
+# Smoke test it on 10 samples first
+LIMIT=10 bash scripts/benchmark_task2_gemini.sh
 
 # Quick iteration: skip the long training step
 SKIP_TRAIN=1 bash scripts/benchmark_all.sh
@@ -45,8 +49,12 @@ SKIP_TRAIN=1 bash scripts/benchmark_all.sh
 
 ## Outputs
 
-* `${RESULTS_DIR}/{baseline}_task1.json` — Task 1 metrics + predictions.
-* `${RESULTS_DIR}/{baseline}_task2.json` — Task 2 rewrites + summary.
+* `experiment_results/task1/{baseline}/{baseline}_task1_{kind}.json` — Task 1
+  metrics + predictions, one file per input representation.
+* `experiment_results/task2/gemini/gemini_task2_{prompt,conversation}.json` —
+  Task 2 rewrites + summary, one file per representation.
+* `${RESULTS_DIR}/{baseline}_task2.json` — the older single-file Task 2 shape,
+  still used by the SafeGuider and Llama rewriters.
 * `${RESULTS_DIR}/{baseline}_train_history.json` — per-epoch training metrics
   for the supervised models.
 
@@ -56,8 +64,8 @@ SKIP_TRAIN=1 bash scripts/benchmark_all.sh
 
 * `HF_TOKEN` (or a prior `huggingface-cli login`) — only for the gated
   Meta repos (`download_weights.sh llamaguard llama`).
-* `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) — only for `benchmark_task2.sh
-  gemini`.
+* `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) — only for the Gemini Task-2
+  rewriter. Can live in the repo-root `.env` instead of the environment.
 
 Everything else has a sensible default in `env.sh`.
 
@@ -87,7 +95,13 @@ Everything else has a sensible default in `env.sh`.
 | `QWEN3GUARD_MODE` | `guardchat` | Qwen3Guard taxonomy: `guardchat / native` |
 | `QWEN3GUARD_CONV_FORMAT` | `concat` | Multi-turn encoding: `concat / turns` |
 | `QWEN3GUARD_CONTROVERSIAL` | `unsafe` | How Qwen3Guard's middle severity level is read: `unsafe / safe` |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model id |
+| `GEMINI_MODEL` | `gemini-3.5-flash` | Gemini model id. The paper's `gemini-2.5-flash` is retired for new API keys — see `src/Gemini/README.md` §2 |
+| `GEMINI_TEST` | `build_dataset/dataset/final_df_test.json` | Test split for `benchmark_task2_gemini.sh` |
+| `GEMINI_OUT` | `experiment_results/task2/gemini` | Where the Task-2 Gemini rewrites land |
+| `GEMINI_WORKERS` | `4` | Concurrent Gemini API requests; lower on a rate-limited key |
+| `GEMINI_TEMPERATURE` | `0.0` | Gemini sampling temperature |
+| `LIMIT` | unset | Cap the sample count (smoke tests) |
+| `RESUME` | `0` | Set to `1` to reuse a `.partial.jsonl` checkpoint |
 
 To pin a local file instead of the HF default, just override:
 

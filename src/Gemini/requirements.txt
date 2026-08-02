@@ -1,0 +1,10 @@
+# Gemini 2.5 Flash Task-2 rewriter (src/Gemini).
+#
+#   pip install -r src/Gemini/requirements.txt
+#
+# API-only baseline - no torch, no transformers, no weight download.
+# The older `google-generativeai` package is NOT used; this module
+# imports `from google import genai`.
+
+google-genai>=1.0,<2
+tqdm>=4.65
