@@ -19,11 +19,18 @@ Outputs::
     <output-dir>/<slug>_task2_<kind>_sbert.json   per-sample scores + summary
     <output-dir>/sbert_similarity_summary.json    one row per input file
 
-This replaces CLIP as the reported semantic-similarity metric; see
-:func:`src.utils.metrics.clip_cosine_similarity` for why. Nothing is
-written back into the source result files - they stay exactly as the
-rewriter left them, so the metric can be redefined and re-run without
-re-spending an API budget.
+Two encoders, side by side
+--------------------------
+``--encoder sbert`` (default) is the reported metric. ``--encoder clip``
+re-runs the metric this repo used before review response W3, over the
+same records and through the same code, and writes ``*_clip.json`` /
+``clip_similarity_summary.json`` alongside. Neither overwrites the
+other: the point is to show what changed when the encoder changed, which
+needs both numbers, not one.
+
+Nothing is written back into the source result files - they stay exactly
+as the rewriter left them, so the metric can be redefined and re-run
+without re-spending an API budget.
 """
 
 from __future__ import annotations
@@ -42,6 +49,10 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from src.utils import resolve_device, resolve_hf_token  # noqa: E402
+from src.SBERT.clip_baseline import (  # noqa: E402
+    DEFAULT_CLIP_MODEL,
+    CLIPSimilarityEncoder,
+)
 from src.SBERT.model import (  # noqa: E402
     DEFAULT_BATCH_SIZE,
     DEFAULT_LOCAL_DIR,
@@ -58,7 +69,11 @@ from src.SBERT.similarity import (  # noqa: E402
 DEFAULT_OUTPUT_DIR = os.path.join(
     _REPO_ROOT, "experiment_results", "task2", "similarity"
 )
-SUMMARY_FILENAME = "sbert_similarity_summary.json"
+
+# ``clip`` re-runs the metric this repo used before review response W3,
+# over the same records and the same code, so the two are comparable to
+# the encoder and nothing else. See src/SBERT/clip_baseline.py.
+ENCODER_KINDS = ("sbert", "clip")
 
 # Only the two representations Task 2 rewrites. Matching on the exact
 # suffix keeps stray files (checkpoints, sidecars from an earlier pass)
@@ -101,6 +116,7 @@ def score_one(
     per_turn: bool,
     batch_size: Optional[int],
     encoder_meta: Dict[str, Any],
+    encoder_kind: str = "sbert",
 ) -> Dict[str, Any]:
     """Score one result file and write its sidecar. Returns the table row."""
     kind, records, meta = load_result_file(path)
@@ -116,12 +132,12 @@ def score_one(
     summary = summarise_scores(scored, encoder_meta=encoder_meta)
     summary["elapsed_sec"] = round(elapsed, 2)
 
-    out_path = output_path(output_dir, path)
+    out_path = output_path(output_dir, path, suffix=encoder_kind)
     payload = {
         "summary": summary,
         "scores": scored,
         "meta": {
-            "metric": "sbert_cosine_similarity",
+            "metric": f"{encoder_kind}_cosine_similarity",
             "baseline": slug,
             "text_kind": kind,
             "source_file": os.path.relpath(path, _REPO_ROOT),
@@ -165,14 +181,14 @@ def print_summary(summary: Dict[str, Any]) -> None:
             print(f"  {key:>28}: {val}")
 
 
-def print_table(rows: Sequence[Dict[str, Any]]) -> None:
+def print_table(rows: Sequence[Dict[str, Any]], title: str) -> None:
     """The cross-baseline comparison, in the shape the paper table needs."""
     if not rows:
         return
     header = "%-14s %-13s %7s %7s %9s %11s %9s" % (
         "baseline", "kind", "n", "scored", "mean", "penalised", "per-turn")
     print("\n" + "=" * len(header))
-    print("  SBERT semantic similarity  (all-mpnet-base-v2)")
+    print(f"  {title}")
     print("=" * len(header))
     print(header)
     print("-" * len(header))
@@ -200,12 +216,19 @@ def main() -> int:
                    help="Task-2 result JSON files, or folders holding them.")
     p.add_argument("--output-dir", type=str, default=DEFAULT_OUTPUT_DIR,
                    help=f"Where sidecars land. Default: {DEFAULT_OUTPUT_DIR}.")
+    p.add_argument("--encoder", type=str, default="sbert", choices=ENCODER_KINDS,
+                   help="Which encoder defines the metric. 'sbert' is the "
+                        "reported one; 'clip' re-runs the superseded metric "
+                        "over the same records for comparison. Default: sbert.")
     p.add_argument("--weights", type=str, default=DEFAULT_LOCAL_DIR,
-                   help="Local snapshot folder, or a HuggingFace id. "
-                        f"Default: {DEFAULT_LOCAL_DIR}.")
+                   help="Local snapshot folder, or a HuggingFace id. Ignored "
+                        f"for --encoder clip. Default: {DEFAULT_LOCAL_DIR}.")
     p.add_argument("--model-name", type=str, default=DEFAULT_MODEL_NAME,
                    help=f"Repo id to fetch when --weights is empty. "
                         f"Default: {DEFAULT_MODEL_NAME}.")
+    p.add_argument("--clip-model", type=str, default=DEFAULT_CLIP_MODEL,
+                   help="CLIP text encoder for --encoder clip. Default: "
+                        f"{DEFAULT_CLIP_MODEL}.")
     p.add_argument("--device", type=str, default="auto",
                    choices=("auto", "cuda", "cpu", "mps"),
                    help="Torch device. Default: auto.")
@@ -229,26 +252,47 @@ def main() -> int:
         print("No Task-2 result files matched --results.", file=sys.stderr)
         return 1
 
+    kind = args.encoder
     device = resolve_device(args.device)
-    print(f"[sbert] device: {device}")
-    print(f"[sbert] scoring {len(inputs)} file(s)")
+    print(f"[{kind}] device: {device}")
+    print(f"[{kind}] scoring {len(inputs)} file(s)")
 
-    encoder = load_encoder(
-        model_path=args.weights,
-        repo_id=args.model_name,
-        device=device,
-        max_seq_length=args.max_seq_length,
-        batch_size=args.batch_size,
-        token=resolve_hf_token(args.token),
-    )
-    encoder_meta = {
-        "encoder": args.model_name,
-        "encoder_path": encoder.model_path,
-        "max_seq_length": encoder.max_seq_length,
-        "pooling": "mean",
-        "normalised": True,
-    }
-    print(f"[sbert] max_seq_length: {encoder.max_seq_length}")
+    if kind == "clip":
+        if args.max_seq_length is not None:
+            print("[clip] ignoring --max-seq-length: CLIP's 77-token window "
+                  "is baked into the checkpoint's positional table.")
+        encoder = CLIPSimilarityEncoder(
+            model_name=args.clip_model,
+            device=device,
+            batch_size=args.batch_size,
+        )
+        encoder_meta = {
+            "encoder": args.clip_model,
+            "encoder_path": encoder.model_path,
+            "max_seq_length": encoder.max_seq_length,
+            "pooling": "eos",
+            "normalised": False,
+        }
+        title = f"CLIP semantic similarity  ({args.clip_model})  [superseded]"
+    else:
+        encoder = load_encoder(
+            model_path=args.weights,
+            repo_id=args.model_name,
+            device=device,
+            max_seq_length=args.max_seq_length,
+            batch_size=args.batch_size,
+            token=resolve_hf_token(args.token),
+        )
+        encoder_meta = {
+            "encoder": args.model_name,
+            "encoder_path": encoder.model_path,
+            "max_seq_length": encoder.max_seq_length,
+            "pooling": "mean",
+            "normalised": True,
+        }
+        title = f"SBERT semantic similarity  ({args.model_name})"
+
+    print(f"[{kind}] max_seq_length: {encoder.max_seq_length}")
 
     rows = [
         score_one(
@@ -256,15 +300,16 @@ def main() -> int:
             per_turn=not args.no_per_turn,
             batch_size=args.batch_size,
             encoder_meta=encoder_meta,
+            encoder_kind=kind,
         )
         for path in inputs
     ]
 
-    print_table(rows)
+    print_table(rows, title)
 
-    summary_path = os.path.join(args.output_dir, SUMMARY_FILENAME)
+    summary_path = os.path.join(args.output_dir, f"{kind}_similarity_summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
-        json.dump({"metric": "sbert_cosine_similarity",
+        json.dump({"metric": f"{kind}_cosine_similarity",
                    **encoder_meta, "rows": rows}, f, indent=2, ensure_ascii=False)
     print(f"\nCombined summary -> {summary_path}")
     return 0

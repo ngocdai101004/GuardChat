@@ -17,6 +17,10 @@ Scoring runs offline over finished Task-2 result files - see
 rewriter outputs are never modified.
 """
 
+from .clip_baseline import (
+    DEFAULT_CLIP_MODEL,
+    CLIPSimilarityEncoder,
+)
 from .model import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_LOCAL_DIR,
@@ -35,7 +39,9 @@ from .similarity import (
 )
 
 __all__ = [
+    "CLIPSimilarityEncoder",
     "DEFAULT_BATCH_SIZE",
+    "DEFAULT_CLIP_MODEL",
     "DEFAULT_LOCAL_DIR",
     "DEFAULT_MODEL_NAME",
     "FALLBACK_MAX_SEQ_LENGTH",

@@ -253,10 +253,14 @@ def _round_floats(obj: Any, places: int = 6) -> Any:
     return obj
 
 
-def output_path(output_dir: str, source_path: str) -> str:
-    """``<output_dir>/<source stem>_sbert.json``."""
+def output_path(output_dir: str, source_path: str, suffix: str = "sbert") -> str:
+    """``<output_dir>/<source stem>_<suffix>.json``.
+
+    The suffix carries the encoder, so an SBERT pass and a CLIP pass over
+    the same run land side by side instead of overwriting each other.
+    """
     stem = os.path.splitext(os.path.basename(source_path))[0]
-    return os.path.join(output_dir, f"{stem}_sbert.json")
+    return os.path.join(output_dir, f"{stem}_{suffix}.json")
 
 
 __all__ = [

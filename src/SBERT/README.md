@@ -26,10 +26,29 @@ encodings compares prefixes, and when a rewriter's edits land past token
 `sentence-transformers/all-mpnet-base-v2` answers both: trained
 contrastively on 1B+ **text pairs**, and a 384-token window.
 
-CLIP similarity is **not deleted** —
-`src.utils.metrics.clip_cosine_similarity` stays, because SafeGuider's
-beam search uses a CLIP cosine internally as its `similarity_floor`, and
-because the earlier revision's numbers have to remain reproducible.
+CLIP similarity is **not deleted, and not merely archived** — it is
+still runnable, side by side:
+
+```bash
+bash scripts/eval_task2_similarity.sh llama gemini              # SBERT
+ENCODER=clip bash scripts/eval_task2_similarity.sh llama gemini # CLIP
+```
+
+Both passes read the same records and go through the same
+`score_records` code; only the encoder differs, so any divergence is
+attributable to the encoder alone. Outputs never collide — the suffix
+follows the encoder (`*_sbert.json` / `*_clip.json`,
+`sbert_similarity_summary.json` / `clip_similarity_summary.json`).
+
+Keeping CLIP runnable serves three purposes: the first revision's
+numbers stay reproducible, SafeGuider's beam search uses a CLIP cosine
+internally as its `similarity_floor` so the encoder must stay loadable,
+and a metric change is a claim that is far easier to defend with both
+columns printed than with one.
+
+Adapter: `clip_baseline.py`. Differences that make the two columns
+non-interchangeable — 77 vs 384 tokens, EOS-position vector vs
+mean-pooled, unnormalised vs L2-normalised.
 
 ---
 
@@ -38,6 +57,7 @@ because the earlier revision's numbers have to remain reproducible.
 ```
 src/SBERT/
 ├── model.py             # SBERTEncoder: load, mean-pool, normalise, count tokens
+├── clip_baseline.py     # the superseded CLIP metric, same interface
 ├── similarity.py        # scoring a Task-2 result file -> per-sample + summary
 ├── eval_similarity.py   # CLI
 ├── download_weights.py  # CLI: fetch the snapshot (~440 MB, open access)

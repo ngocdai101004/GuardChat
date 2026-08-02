@@ -8,11 +8,18 @@
 #
 # Metric: cosine similarity between mean-pooled, L2-normalised
 # `sentence-transformers/all-mpnet-base-v2` embeddings of the original
-# and the rewritten text. This REPLACES the CLIP cosine similarity of the
-# first revision - CLIP's text tower is trained to align text with
-# images, not text with text, and its 77-token window truncates ~80% of
-# GuardChat's enhanced prompts. SBERT is trained on text pairs and reads
-# 384 tokens.
+# and the rewritten text. This is the REPORTED metric, replacing the CLIP
+# cosine similarity of the first revision - CLIP's text tower is trained
+# to align text with images, not text with text, and its 77-token window
+# truncates ~80% of GuardChat's enhanced prompts. SBERT is trained on
+# text pairs and reads 384 tokens.
+#
+# CLIP is still runnable, and both can be produced side by side:
+#   ENCODER=clip bash scripts/eval_task2_similarity.sh llama gemini
+# writes *_clip.json + clip_similarity_summary.json next to the SBERT
+# files without overwriting them. Same records, same code, so any
+# difference is the encoder alone - which is what makes the metric change
+# arguable rather than asserted.
 #
 # Usage:
 #   bash scripts/eval_task2_similarity.sh                    # llama + gemini
@@ -27,17 +34,21 @@
 # Inputs (override via env):
 #   TASK2_RESULTS   default: experiment_results/task2
 #   SIMILARITY_OUT  default: experiment_results/task2/similarity
+#   ENCODER         default: sbert   (sbert | clip)
 #   SBERT_WEIGHTS   default: src/SBERT/weights/all-mpnet-base-v2
 #                   populated on first run, or ahead of time with
 #                   `bash scripts/download_weights.sh sbert`
+#   SAFEGUIDER_ENCODER  default: openai/clip-vit-large-patch14
+#                   the CLIP encoder used when ENCODER=clip; shared with
+#                   the SafeGuider rewriter so both read the same weights
 #   DEVICE          default: auto  (cuda when available)
 #   SBERT_BATCH_SIZE default: 64   throughput only; scores do not depend on it
 #   MAX_SEQ_LENGTH  default: unset (384, read from the checkpoint)
 #   PER_TURN        default: 1     also score conversations turn by turn
 #
-# Outputs:
-#   ${SIMILARITY_OUT}/<slug>_task2_<kind>_sbert.json   per-sample scores
-#   ${SIMILARITY_OUT}/sbert_similarity_summary.json    cross-baseline table
+# Outputs (suffix follows ENCODER):
+#   ${SIMILARITY_OUT}/<slug>_task2_<kind>_${ENCODER}.json  per-sample scores
+#   ${SIMILARITY_OUT}/${ENCODER}_similarity_summary.json   cross-baseline table
 #
 # Reading the table:
 #   mean       - scored rows only; rewriter failures are excluded
@@ -54,6 +65,15 @@ TASK2_RESULTS="${TASK2_RESULTS:-${REPO_ROOT}/experiment_results/task2}"
 SIMILARITY_OUT="${SIMILARITY_OUT:-${TASK2_RESULTS}/similarity}"
 SBERT_BATCH_SIZE="${SBERT_BATCH_SIZE:-64}"
 PER_TURN="${PER_TURN:-1}"
+ENCODER="${ENCODER:-sbert}"
+
+case "${ENCODER}" in
+    sbert|clip) ;;
+    *)
+        echo "ERROR: ENCODER must be 'sbert' or 'clip', got '${ENCODER}'" >&2
+        exit 2
+        ;;
+esac
 
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
@@ -84,16 +104,18 @@ EXTRA=()
 [[ -n "${MAX_SEQ_LENGTH:-}" ]] && EXTRA+=(--max-seq-length "${MAX_SEQ_LENGTH}")
 [[ "${PER_TURN}" == "0" ]] && EXTRA+=(--no-per-turn)
 
-section "SBERT semantic similarity (Task 2)"
+section "Semantic similarity (Task 2) - encoder: ${ENCODER}"
 # ${EXTRA[@]+...} guards the expansion: under `set -u`, bash 3.2 (the
 # system bash on macOS) treats an empty array as unset.
 run_module src.SBERT.eval_similarity \
     --results "${INPUTS[@]}" \
+    --encoder "${ENCODER}" \
     --weights "${SBERT_WEIGHTS}" \
+    --clip-model "${SAFEGUIDER_ENCODER:-openai/clip-vit-large-patch14}" \
     --batch-size "${SBERT_BATCH_SIZE}" \
     --output-dir "${SIMILARITY_OUT}" \
     ${EXTRA[@]+"${EXTRA[@]}"}
 
 section "Done"
 echo "Similarity scores saved under ${SIMILARITY_OUT}/"
-ls -1 "${SIMILARITY_OUT}"/*_sbert.json 2>/dev/null || true
+ls -1 "${SIMILARITY_OUT}"/*_"${ENCODER}".json 2>/dev/null || true

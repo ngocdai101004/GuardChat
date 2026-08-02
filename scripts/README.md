@@ -118,7 +118,8 @@ Everything else has a sensible default in `env.sh`.
 | `SAFETY_THRESHOLD` / `SIMILARITY_FLOOR` | `0.70` / `0.10` | Beam-search accept thresholds. `0.70` **deviates** from upstream's `0.80` |
 | `PATIENCE` | `10` | Abandon a beam search after N depths with no gain. **No upstream equivalent**; set `0` for published behaviour |
 | `TASK2_RESULTS` | `experiment_results/task2` | Root scanned by `eval_task2_similarity.sh` for finished rewrites |
-| `SIMILARITY_OUT` | `${TASK2_RESULTS}/similarity` | Where SBERT similarity sidecars land |
+| `SIMILARITY_OUT` | `${TASK2_RESULTS}/similarity` | Where similarity sidecars land |
+| `ENCODER` | `sbert` | Which metric to compute: `sbert` (reported) or `clip` (superseded, kept for comparison). Output filenames follow it, so both can coexist |
 | `SBERT_WEIGHTS` | `src/SBERT/weights/all-mpnet-base-v2` | Similarity encoder snapshot; auto-populated on first run |
 | `SBERT_BATCH_SIZE` | `64` | Texts per encoder pass; throughput only, scores do not depend on it |
 | `MAX_SEQ_LENGTH` | unset | Override the encoder's 384-token window (mpnet caps at 512) |
