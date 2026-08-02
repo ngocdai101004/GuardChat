@@ -37,6 +37,10 @@
 #                          throughput only, results do not depend on it
 #   BEAM_WIDTH             default: 6
 #   MAX_DEPTH              default: 25
+#   PATIENCE               default: 0 (upstream: always run to MAX_DEPTH)
+#                          set N to abandon a search after N depths with no
+#                          gain. Cuts the hopeless cases, which are also the
+#                          slowest. NOT upstream - report it with results.
 #   SAFETY_THRESHOLD       default: 0.80
 #   SIMILARITY_FLOOR       default: 0.10
 #   DEVICE                 default: unset (cuda when available)
@@ -58,6 +62,7 @@ SAFEGUIDER_GATE="${SAFEGUIDER_GATE:-recognizer}"
 SAFEGUIDER_BATCH_SIZE="${SAFEGUIDER_BATCH_SIZE:-64}"
 BEAM_WIDTH="${BEAM_WIDTH:-6}"
 MAX_DEPTH="${MAX_DEPTH:-25}"
+PATIENCE="${PATIENCE:-0}"
 SAFETY_THRESHOLD="${SAFETY_THRESHOLD:-0.80}"
 SIMILARITY_FLOOR="${SIMILARITY_FLOOR:-0.10}"
 
@@ -110,6 +115,7 @@ for kind in "${KINDS[@]}"; do
         --safety-threshold "${SAFETY_THRESHOLD}" \
         --similarity-floor "${SIMILARITY_FLOOR}" \
         --batch-size "${SAFEGUIDER_BATCH_SIZE}" \
+        --patience "${PATIENCE}" \
         --output-dir "${SAFEGUIDER_OUT}" \
         ${EXTRA[@]+"${EXTRA[@]}"}
 done

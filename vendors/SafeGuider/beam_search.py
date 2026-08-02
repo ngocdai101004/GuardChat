@@ -81,6 +81,15 @@ DEFAULT_SIMILARITY_FLOOR: float = 0.1
 # pass. Pure throughput knob — see "Deliberate deviations" above.
 DEFAULT_BATCH_SIZE: int = 64
 
+# Not upstream: consecutive depths allowed to pass without the best raw
+# safety improving before the search gives up and takes what it has.
+# 0 disables it, which is upstream behaviour (always run to max_depth).
+# This one DOES change results — see `patience` in the class docstring.
+DEFAULT_PATIENCE: int = 0
+
+# Below this, a depth counts as having made no progress at all.
+_PATIENCE_EPS: float = 1e-3
+
 
 @dataclass
 class BeamSearchResult:
@@ -99,6 +108,15 @@ class BeamSearchResult:
     #   single_word too short to delete from
     outcome: str = "unchanged"
     depth_reached: int = 0
+
+    # Why the depth loop ended:
+    #   qualified      a candidate cleared both thresholds (upstream's
+    #                  own early stop)
+    #   patience       no progress for `patience` depths - gave up
+    #   max_depth      ran the full budget
+    #   no_expansion   every word already deleted
+    #   single_word    never entered the loop
+    halt_reason: str = "max_depth"
 
     # Encoder reach on the ORIGINAL prompt. `truncated` means the tail of
     # the prompt sat outside CLIP's window and no deletion there could
@@ -123,6 +141,7 @@ class BeamSearchResult:
             "removed_tokens": self.removed_tokens,
             "outcome": self.outcome,
             "depth_reached": self.depth_reached,
+            "halt_reason": self.halt_reason,
             "num_tokens": self.num_tokens,
             "truncated": self.truncated,
             "num_encoded": self.num_encoded,
@@ -130,7 +149,25 @@ class BeamSearchResult:
 
 
 class SafetyAwareBeamSearch:
-    """Rewriter using beam search at the word (whitespace split) level."""
+    """Rewriter using beam search at the word (whitespace split) level.
+
+    ``patience`` is the one parameter here that is **not** upstream. With
+    the default 0 the loop always runs to ``max_depth``, exactly as
+    ``safeguider_gene.py`` does. Set it to N and the search stops once N
+    consecutive depths fail to raise the best raw safety score.
+
+    It exists because upstream's only early exit fires when a candidate
+    *qualifies*. A prompt whose unsafe content sits past the encoder's
+    77-token window can never qualify, so it burns the full budget - and
+    those are precisely the expensive ones, since qualifying prompts exit
+    the moment they succeed. Capping ``max_depth`` instead would be the
+    wrong lever: prompts that do qualify often need depth 14-24, so a low
+    cap throws away successes to save time on failures.
+
+    Patience keeps the successes and abandons the plateaus. It is a
+    genuine deviation, so it is recorded in ``halt_reason`` per sample
+    and must be reported alongside any results produced with it.
+    """
 
     def __init__(
         self,
@@ -141,6 +178,7 @@ class SafetyAwareBeamSearch:
         safety_threshold: float = DEFAULT_SAFETY_THRESHOLD,
         similarity_floor: float = DEFAULT_SIMILARITY_FLOOR,
         batch_size: int = DEFAULT_BATCH_SIZE,
+        patience: int = DEFAULT_PATIENCE,
         verbose: bool = False,
     ) -> None:
         self.encoder = encoder
@@ -152,6 +190,7 @@ class SafetyAwareBeamSearch:
         self.safety_threshold = float(safety_threshold)
         self.similarity_floor = float(similarity_floor)
         self.batch_size = max(1, int(batch_size))
+        self.patience = max(0, int(patience))
         self.verbose = bool(verbose)
 
     # ============================ Public API ============================ #
@@ -192,12 +231,14 @@ class SafetyAwareBeamSearch:
                    + (f" | TRUNCATED at {self.encoder.max_length} tokens "
                       f"(prompt is {num_tokens})" if truncated else ""))
 
-        def _unchanged(outcome: str, depth: int = 0) -> BeamSearchResult:
+        def _unchanged(outcome: str, depth: int = 0,
+                       halt: str = "single_word") -> BeamSearchResult:
             return BeamSearchResult(
                 original_prompt=prompt, modified_prompt=prompt, was_modified=False,
                 original_safety=orig_safety, modified_safety=orig_safety,
                 similarity=1.0, removed_tokens=[], outcome=outcome,
-                depth_reached=depth, num_tokens=num_tokens, truncated=truncated,
+                depth_reached=depth, halt_reason=halt,
+                num_tokens=num_tokens, truncated=truncated,
                 num_encoded=len(cache), log=log,
             )
 
@@ -237,6 +278,11 @@ class SafetyAwareBeamSearch:
         # Every candidate ever scored, kept for the fallback rule.
         all_seen: List[Tuple[List[int], float, float, float, str]] = []
         depth = 0
+        halt_reason = "max_depth"
+        # Patience bookkeeping: the best raw safety seen anywhere so far,
+        # and how many depths in a row have failed to beat it.
+        best_seen_safety = orig_safety
+        stalled = 0
 
         for depth in range(1, max_depth + 1):
             # Enumerate this depth's expansions, then score them together.
@@ -255,6 +301,7 @@ class SafetyAwareBeamSearch:
 
             if not expansions:
                 log.append(f"depth {depth}: nothing left to expand; stopping.")
+                halt_reason = "no_expansion"
                 break
 
             stats = self._evaluate([text for _idx, text in expansions], orig_eos, cache)
@@ -292,11 +339,28 @@ class SafetyAwareBeamSearch:
             log.append(f"depth {depth}: {len(qualified)} qualified, "
                        f"{len(step)} expanded, picked={tag}")
 
-            # Early stopping.
+            # Early stopping (upstream).
             if (best_modified_prompt is not None
                     and (best_safety_improvement + orig_safety) >= self.safety_threshold):
                 log.append("early stop: found satisfactory solution.")
+                halt_reason = "qualified"
                 break
+
+            # Patience (not upstream; disabled at patience=0). Measured on
+            # the best RAW safety, not on `best_modified_prompt`, which
+            # stays None until something qualifies and so would make every
+            # unqualified search look equally stalled from depth 1.
+            depth_best = max(s for _i, _im, _sm, s in step)
+            if depth_best > best_seen_safety + _PATIENCE_EPS:
+                best_seen_safety = depth_best
+                stalled = 0
+            else:
+                stalled += 1
+                if self.patience and stalled >= self.patience:
+                    log.append(f"patience: no gain for {stalled} depth(s) "
+                               f"(best {best_seen_safety:.4f}); giving up.")
+                    halt_reason = "patience"
+                    break
 
         # 3) Final selection.
         if best_modified_prompt is not None:
@@ -313,6 +377,7 @@ class SafetyAwareBeamSearch:
                 removed_tokens=best_tokens_removed,
                 outcome="qualified",
                 depth_reached=depth,
+                halt_reason=halt_reason,
                 num_tokens=num_tokens,
                 truncated=truncated,
                 num_encoded=len(cache),
@@ -337,6 +402,7 @@ class SafetyAwareBeamSearch:
                 removed_tokens=[words[i] for i in best_indices],
                 outcome="fallback",
                 depth_reached=depth,
+                halt_reason=halt_reason,
                 num_tokens=num_tokens,
                 truncated=truncated,
                 num_encoded=len(cache),
@@ -344,7 +410,7 @@ class SafetyAwareBeamSearch:
             )
 
         log.append("no candidate satisfied similarity_floor - keeping the original.")
-        return _unchanged("unchanged", depth)
+        return _unchanged("unchanged", depth, halt_reason)
 
     # ============================ Internals ============================== #
 

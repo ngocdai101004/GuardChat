@@ -52,6 +52,7 @@ from src.utils import (  # noqa: E402
 from src.SafeGuider import (  # noqa: E402
     DEFAULT_BATCH_SIZE,
     DEFAULT_BEAM_WIDTH,
+    DEFAULT_PATIENCE,
     DEFAULT_MAX_DEPTH,
     DEFAULT_SAFETY_THRESHOLD,
     DEFAULT_SIMILARITY_FLOOR,
@@ -132,6 +133,16 @@ def build_parser() -> argparse.ArgumentParser:
                         "throughput knob - results do not depend on it. "
                         f"Lower it on a small GPU. Default: {DEFAULT_BATCH_SIZE}.")
 
+    p.add_argument("--patience", type=int, default=DEFAULT_PATIENCE,
+                   help="Stop a search after this many consecutive depths "
+                        "fail to raise the best safety score. 0 (default) "
+                        "is upstream behaviour: always run to --max-depth. "
+                        "NOT an upstream parameter - it changes results and "
+                        "must be reported. Prefer it to a low --max-depth: "
+                        "prompts that do succeed often need depth 14-24, so "
+                        "capping depth discards successes to save time on "
+                        "hopeless cases, while patience abandons only the "
+                        "plateaus. Per-sample effect is in extra.halt_reason.")
     p.add_argument("--limit", type=int, default=None,
                    help="Cap the number of samples (smoke tests).")
     p.add_argument("--output-dir", type=str, default=DEFAULT_OUTPUT_DIR,
@@ -192,15 +203,19 @@ def _diagnostic_units(
     )
 
 
-def _outcome_counts(kind: str, extras: List[Dict[str, Any]]) -> Dict[str, int]:
-    """How each search ended, flattened to turn level for conversations."""
+def _outcome_counts(
+    kind: str,
+    extras: List[Dict[str, Any]],
+    key: str = "outcome",
+) -> Dict[str, int]:
+    """Tally one per-search field, flattened to turn level for conversations."""
     counts: Dict[str, int] = {}
     for e in extras:
         rows = e.get("turns") if kind == "conversation" else [e]
         for row in rows or []:
-            key = str(row.get("outcome")
-                      or ("gated_safe" if row.get("gated_safe") else "n/a"))
-            counts[key] = counts.get(key, 0) + 1
+            label = str(row.get(key)
+                        or ("gated_safe" if row.get("gated_safe") else "n/a"))
+            counts[label] = counts.get(label, 0) + 1
     return counts
 
 
@@ -232,6 +247,11 @@ def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -
         print(f"  search outcome: "
               f"{', '.join(f'{k}={v}' for k, v in sorted(outcomes.items()))}")
 
+    halts = _outcome_counts(kind, extras, key="halt_reason")
+    if halts:
+        print(f"  halt reason:    "
+              f"{', '.join(f'{k}={v}' for k, v in sorted(halts.items()))}")
+
 
 def main() -> int:
     args = build_parser().parse_args()
@@ -258,6 +278,7 @@ def main() -> int:
         safety_threshold=args.safety_threshold,
         similarity_floor=args.similarity_floor,
         batch_size=args.batch_size,
+        patience=args.patience,
         gate=args.gate,
         verbose=args.verbose,
     )
@@ -268,6 +289,10 @@ def main() -> int:
     print(f"  beam width {args.beam_width}, max depth {args.max_depth}, "
           f"safety >= {args.safety_threshold}, similarity >= "
           f"{args.similarity_floor}, gate={args.gate}")
+    if args.patience:
+        print(f"  patience {args.patience}: searches that stall for that "
+              f"many depths give up early. This is NOT upstream behaviour "
+              f"- report it with the results.")
 
     meta: Dict[str, object] = {
         "task": "task2_rewrite",
@@ -283,6 +308,7 @@ def main() -> int:
         "safety_threshold": args.safety_threshold,
         "similarity_floor": args.similarity_floor,
         "batch_size": args.batch_size,
+        "patience": args.patience,
         "conversation_strategy": "per_turn",
     }
 

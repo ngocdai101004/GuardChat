@@ -61,6 +61,7 @@ from . import (
     CLIPEncoder,
     DEFAULT_BATCH_SIZE,
     DEFAULT_BEAM_WIDTH,
+    DEFAULT_PATIENCE,
     DEFAULT_MAX_DEPTH,
     DEFAULT_SAFETY_THRESHOLD,
     DEFAULT_SIMILARITY_FLOOR,
@@ -112,6 +113,7 @@ class RewritePipeline:
         safety_threshold: float = DEFAULT_SAFETY_THRESHOLD,
         similarity_floor: float = DEFAULT_SIMILARITY_FLOOR,
         batch_size: int = DEFAULT_BATCH_SIZE,
+        patience: int = DEFAULT_PATIENCE,
         gate: str = "recognizer",
         verbose: bool = False,
     ) -> "RewritePipeline":
@@ -135,6 +137,7 @@ class RewritePipeline:
             safety_threshold=safety_threshold,
             similarity_floor=similarity_floor,
             batch_size=batch_size,
+            patience=patience,
             verbose=verbose,
         )
         return cls(searcher=searcher, encoder_model=encoder_model,
@@ -196,6 +199,7 @@ class RewritePipeline:
             "num_removed": len(r.removed_tokens),
             "outcome": r.outcome,
             "depth_reached": r.depth_reached,
+            "halt_reason": r.halt_reason,
             "num_tokens": r.num_tokens,
             "truncated": r.truncated,
             "num_encoded": r.num_encoded,
