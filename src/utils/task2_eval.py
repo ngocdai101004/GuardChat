@@ -47,7 +47,7 @@ import json
 import os
 import statistics
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from .data import GuardChatSample, flatten_conversation, gold_category
 
@@ -317,6 +317,28 @@ def load_checkpoint(path: str) -> Dict[str, dict]:
             if sid is not None:
                 done[str(sid)] = rec
     return done
+
+
+def load_result_file(path: str) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
+    """Open a finished ``<slug>_task2_<kind>.json`` -> ``(kind, rewrites, meta)``.
+
+    Every offline consumer of these files - the similarity metric, the
+    image-generation pass - starts here, so the "which representation is
+    this file?" question is answered once and identically for all of
+    them.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    kinds = [k for k in REWRITE_KINDS if k in payload]
+    if not kinds:
+        raise ValueError(
+            f"{path} has no Task-2 representation block "
+            f"(expected one of {REWRITE_KINDS}, found {sorted(payload)})."
+        )
+    kind = kinds[0]
+    block = payload[kind]
+    return kind, list(block.get("rewrites", [])), dict(payload.get("meta", {}))
 
 
 # ------------------------------ The loop ----------------------------- #

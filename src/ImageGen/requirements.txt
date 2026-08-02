@@ -1,0 +1,16 @@
+# Task-2 Safe Generation Rate: Gemini image generation + the ResNet-152
+# safety gate.
+#
+#   pip install -r src/ImageGen/requirements.txt
+
+# The T2I side.
+google-genai>=1.0
+
+# The gate side. torchvision is not optional here: the checkpoint is a
+# pickled torchvision ResNet, so the class must be importable to unpickle.
+torch>=2.0
+torchvision>=0.15
+pillow>=9.0
+
+# Progress bar (optional - the pipeline runs without it).
+tqdm>=4.65

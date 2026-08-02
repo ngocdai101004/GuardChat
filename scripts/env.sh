@@ -54,6 +54,13 @@ LLAMA_WEIGHTS="${LLAMA_WEIGHTS:-${REPO_ROOT}/src/Llama/weights/Llama-3.1-8B-Inst
 # (~440 MB, open access). Not a baseline - it scores finished rewrites.
 SBERT_WEIGHTS="${SBERT_WEIGHTS:-${REPO_ROOT}/src/SBERT/weights/all-mpnet-base-v2}"
 
+# ResNet-152 image-safety gate for the Task-2 Safe Generation Rate
+# (~230 MB). Not a baseline either - it decides whether a generated image
+# counts as safe. This is the same checkpoint the Image-Generation-Guardian
+# service deploys; copy it in from
+#   apps/backend/guardian/impl/image_classifier/checkpoints/
+IMAGE_CLASSIFIER_WEIGHTS="${IMAGE_CLASSIFIER_WEIGHTS:-${REPO_ROOT}/src/ImageGen/weights/best_model_152_full.pt}"
+
 # ---------------- Runtime defaults ----------------
 
 # Python interpreter. Use a venv-local python by exporting PYTHON before
@@ -144,5 +151,5 @@ export GUARDCHAT_TRAIN_SPLIT GUARDCHAT_TEST_SPLIT
 export SAFEGUIDER_RECOG_WEIGHTS SAFEGUIDER_BINARY_WEIGHTS
 export BILSTM_WEIGHTS BERT_WEIGHTS
 export LLAMAGUARD_WEIGHTS QWEN_WEIGHTS LLAMA_WEIGHTS SHIELDGEMMA_WEIGHTS
-export QWEN3GUARD_WEIGHTS SBERT_WEIGHTS
+export QWEN3GUARD_WEIGHTS SBERT_WEIGHTS IMAGE_CLASSIFIER_WEIGHTS
 export PYTHON DTYPE TEXT_KIND

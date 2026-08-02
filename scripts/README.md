@@ -25,6 +25,7 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | `benchmark_task2_llama.sh` | Llama-3.1-8B-Instruct alone, same two representations. Gated repo — needs `HF_TOKEN`. See `src/Llama/README.md`. |
 | `benchmark_task2_safeguider.sh` | SafeGuider beam-search rewriter alone, same two representations. No API key and no generation — needs `SD1.4_safeguider.pt`. See `src/SafeGuider/README.md`. |
 | `eval_task2_similarity.sh` | Score finished Task-2 rewrites for semantic preservation with SBERT (`all-mpnet-base-v2`). Offline metric pass over `rewritten_text` — no rewriter runs, no API budget. Replaces the CLIP similarity of the first revision. See `src/SBERT/README.md`. |
+| `generate_task2_images.sh` | Draw the finished Task-2 rewrites with Gemini 2.5 Flash Image and gate the pictures with the deployed ResNet-152 classifier — the Safe Generation Rate pass. **Paid**: one generation per row, and one *per turn* for conversations in `chat` mode. Start with `LIMIT`. See `src/ImageGen/README.md`. |
 | `benchmark_all.sh` | End-to-end: train + Task 1 + Task 2. `SKIP_TRAIN=1` to skip the training step. |
 
 ## Common usage
@@ -59,6 +60,9 @@ SKIP_TRAIN=1 bash scripts/benchmark_all.sh
 * `experiment_results/task2/similarity/{baseline}_task2_{prompt,conversation}_sbert.json`
   — SBERT semantic similarity per sample, plus `sbert_similarity_summary.json`
   with the cross-baseline table.
+* `experiment_results/task2/images/{baseline}_task2_{prompt,conversation}_sgr.json`
+  — per-sample Safe Generation Rate verdicts plus `sgr_summary.json`; the
+  generated images land under `experiment_results/task2/images/images/{baseline}/{kind}/`.
 * `${RESULTS_DIR}/{baseline}_train_history.json` — per-epoch training metrics
   for the supervised models.
 
@@ -124,6 +128,13 @@ Everything else has a sensible default in `env.sh`.
 | `SBERT_BATCH_SIZE` | `64` | Texts per encoder pass; throughput only, scores do not depend on it |
 | `MAX_SEQ_LENGTH` | unset | Override the encoder's 384-token window (mpnet caps at 512) |
 | `PER_TURN` | `1` | Set `0` to skip the per-turn conversation similarity |
+| `IMAGES_OUT` | `${TASK2_RESULTS}/images` | Where SGR verdicts and generated images land |
+| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | T2I model used by `generate_task2_images.sh` |
+| `IMAGE_CLASSIFIER_WEIGHTS` | `src/ImageGen/weights/best_model_152_full.pt` | ResNet-152 image-safety gate; copy it in from Image-Generation-Guardian |
+| `TEXT_FIELD` | `rewritten` | `original` runs the no-defence control: what the unrewritten attack draws |
+| `CONVERSATION_MODE` | `chat` | How a dialogue reaches the image model: `chat` (turn by turn, last image counts), `concat`, `last_turn` |
+| `WORKERS` | `4` | Concurrent image-generation calls |
+| `SAVE_TURN_IMAGES` | `0` | `1` keeps every turn's image in `chat` mode (~8x the disk) |
 | `LIMIT` | unset | Cap the sample count (smoke tests) |
 | `RESUME` | `0` | Set to `1` to reuse a `.partial.jsonl` checkpoint |
 

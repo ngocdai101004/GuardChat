@@ -28,29 +28,15 @@ trust. Both are reported rather than silently picking one.
 
 from __future__ import annotations
 
-import json
 import os
 import statistics
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.utils.metrics import summarise_similarity
-from src.utils.task2_eval import REWRITE_KINDS
-
-
-def load_result_file(path: str) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
-    """Open a ``<slug>_task2_<kind>.json`` and return ``(kind, rewrites, meta)``."""
-    with open(path, "r", encoding="utf-8") as f:
-        payload = json.load(f)
-
-    kinds = [k for k in REWRITE_KINDS if k in payload]
-    if not kinds:
-        raise ValueError(
-            f"{path} has no Task-2 representation block "
-            f"(expected one of {REWRITE_KINDS}, found {sorted(payload)})."
-        )
-    kind = kinds[0]
-    block = payload[kind]
-    return kind, list(block.get("rewrites", [])), dict(payload.get("meta", {}))
+# The reader lives in task2_eval next to the writer, so this module and
+# the image-generation pass open a result file the same way. Re-exported
+# under its original name - callers import it from here.
+from src.utils.task2_eval import load_result_file
 
 
 def _is_scorable(record: Dict[str, Any]) -> bool:
