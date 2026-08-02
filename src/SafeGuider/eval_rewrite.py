@@ -33,7 +33,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 # Repo-root sys.path bootstrap.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -147,43 +147,76 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _report_failures(summary: Dict[str, Any]) -> None:
+    """Rows that produced no usable P_safe, split by whose fault it is."""
+    failed = summary.get("num_samples", 0) - summary.get("num_usable", 0)
+    if not failed:
+        return
+
+    errs: Dict[str, int] = summary.get("error_kind_counts") or {}
+    print(f"  WARNING: {failed}/{summary['num_samples']} samples produced "
+          f"no usable rewrite ({errs or summary['status_counts']}). These "
+          f"rows have an empty 'rewritten_text' and count as failures "
+          f"in SGR.")
+
+    infra = {k: v for k, v in errs.items() if k in INFRASTRUCTURE_ERROR_KINDS}
+    if infra:
+        print(f"  ACTION NEEDED: {sum(infra.values())} of those are machine "
+              f"failures, not method behaviour ({infra}). Lower "
+              f"--batch-size for 'oom', fix the cause otherwise, then "
+              f"re-run with --resume.")
+
+
+def _diagnostic_units(
+    kind: str,
+    extras: List[Dict[str, Any]],
+) -> Tuple[str, int, int, int]:
+    """``(unit, total, gated, truncated)`` over the rows that actually ran.
+
+    A conversation's diagnostics are per turn, a prompt's are per row, so
+    the unit differs - but numerator and denominator must always come
+    from the same population.
+    """
+    if kind == "conversation":
+        return (
+            "turns",
+            sum(len(e.get("turns") or []) for e in extras),
+            sum(int(e.get("num_turns_gated_safe") or 0) for e in extras),
+            sum(int(e.get("num_turns_truncated") or 0) for e in extras),
+        )
+    return (
+        "prompts",
+        len(extras),
+        sum(1 for e in extras if e.get("gated_safe")),
+        sum(1 for e in extras if e.get("truncated")),
+    )
+
+
+def _outcome_counts(kind: str, extras: List[Dict[str, Any]]) -> Dict[str, int]:
+    """How each search ended, flattened to turn level for conversations."""
+    counts: Dict[str, int] = {}
+    for e in extras:
+        rows = e.get("turns") if kind == "conversation" else [e]
+        for row in rows or []:
+            key = str(row.get("outcome")
+                      or ("gated_safe" if row.get("gated_safe") else "n/a"))
+            counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -> None:
     """Print the shared summary plus the SafeGuider-specific caveats."""
     print_summary(summary)
-
-    failed = summary.get("num_samples", 0) - summary.get("num_usable", 0)
-    if failed:
-        errs: Dict[str, int] = summary.get("error_kind_counts") or {}
-        print(f"  WARNING: {failed}/{summary['num_samples']} samples produced "
-              f"no usable rewrite ({errs or summary['status_counts']}). These "
-              f"rows have an empty 'rewritten_text' and count as failures "
-              f"in SGR.")
-        infra = {k: v for k, v in errs.items() if k in INFRASTRUCTURE_ERROR_KINDS}
-        if infra:
-            print(f"  ACTION NEEDED: {sum(infra.values())} of those are machine "
-                  f"failures, not method behaviour ({infra}). Lower "
-                  f"--batch-size for 'oom', fix the cause otherwise, then "
-                  f"re-run with --resume.")
+    _report_failures(summary)
 
     # Rows that failed carry no diagnostics at all. Counting them in the
     # denominators below - while they can never contribute to a numerator
     # - would quietly deflate every rate printed here.
-    extras = [r.get("extra") for r in records]
-    extras = [e for e in extras if e]
+    extras = [e for e in (r.get("extra") for r in records) if e]
     if not extras:
         return
 
-    if kind == "conversation":
-        unit = "turns"
-        total = sum(len(e.get("turns") or []) for e in extras)
-        gated = sum(int(e.get("num_turns_gated_safe") or 0) for e in extras)
-        truncated = sum(int(e.get("num_turns_truncated") or 0) for e in extras)
-    else:
-        unit = "prompts"
-        total = len(extras)
-        gated = sum(1 for e in extras if e.get("gated_safe"))
-        truncated = sum(1 for e in extras if e.get("truncated"))
-
+    unit, total, gated, truncated = _diagnostic_units(kind, extras)
     if total:
         # The headline caveat: these rows reached the T2I model exactly as
         # the attacker wrote them, so they are recognizer misses, not
@@ -194,13 +227,7 @@ def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -
               f"({truncated / total:.1%}) exceed CLIP's 77 tokens, so their "
               f"tail was never searched.")
 
-    outcomes: Dict[str, int] = {}
-    for e in extras:
-        rows = e.get("turns") if kind == "conversation" else [e]
-        for row in rows or []:
-            key = str(row.get("outcome") or ("gated_safe" if row.get("gated_safe")
-                                             else "n/a"))
-            outcomes[key] = outcomes.get(key, 0) + 1
+    outcomes = _outcome_counts(kind, extras)
     if outcomes:
         print(f"  search outcome: "
               f"{', '.join(f'{k}={v}' for k, v in sorted(outcomes.items()))}")
