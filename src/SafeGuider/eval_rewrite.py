@@ -249,8 +249,9 @@ def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -
 
     halts = _outcome_counts(kind, extras, key="halt_reason")
     if halts:
-        print(f"  halt reason:    "
-              f"{', '.join(f'{k}={v}' for k, v in sorted(halts.items()))}")
+        # Counts, not settings - see halt_reason in BeamSearchResult.
+        print(f"  halted because: "
+              f"{', '.join(f'{k} x{v}' for k, v in sorted(halts.items()))}")
 
 
 def main() -> int:

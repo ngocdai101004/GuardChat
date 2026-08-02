@@ -112,7 +112,10 @@ class BeamSearchResult:
     # Why the depth loop ended:
     #   qualified      a candidate cleared both thresholds (upstream's
     #                  own early stop)
-    #   patience       no progress for `patience` depths - gave up
+    #   stalled        no progress for `patience` depths - gave up. Named
+    #                  for what happened, not for the knob: these values
+    #                  get COUNTED in reports, and "patience=7" reads far
+    #                  too much like a parameter setting of 7.
     #   max_depth      ran the full budget
     #   no_expansion   every word already deleted
     #   single_word    never entered the loop
@@ -357,9 +360,9 @@ class SafetyAwareBeamSearch:
             else:
                 stalled += 1
                 if self.patience and stalled >= self.patience:
-                    log.append(f"patience: no gain for {stalled} depth(s) "
+                    log.append(f"stalled: no gain for {stalled} depth(s) "
                                f"(best {best_seen_safety:.4f}); giving up.")
-                    halt_reason = "patience"
+                    halt_reason = "stalled"
                     break
 
         # 3) Final selection.

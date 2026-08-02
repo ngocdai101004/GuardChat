@@ -37,12 +37,18 @@
 #                          throughput only, results do not depend on it
 #   BEAM_WIDTH             default: 6
 #   MAX_DEPTH              default: 25
-#   PATIENCE               default: 0 (upstream: always run to MAX_DEPTH)
-#                          set N to abandon a search after N depths with no
-#                          gain. Cuts the hopeless cases, which are also the
-#                          slowest. NOT upstream - report it with results.
-#   SAFETY_THRESHOLD       default: 0.80
+#   PATIENCE               default: 10   (upstream has no such cap)
+#                          abandon a search after N depths with no gain.
+#                          Cuts the hopeless cases, which are also the
+#                          slowest. Set 0 for upstream behaviour.
+#   SAFETY_THRESHOLD       default: 0.70  (upstream: 0.80)
 #   SIMILARITY_FLOOR       default: 0.10
+#
+# NOTE: PATIENCE and SAFETY_THRESHOLD both deviate from the published
+# SafeGuider configuration. They are recorded in each output file's
+# `meta` block and, per sample, in `extra.halt_reason`. Report them with
+# any results. Set PATIENCE=0 SAFETY_THRESHOLD=0.80 to reproduce the
+# paper's configuration exactly.
 #   DEVICE                 default: unset (cuda when available)
 #   LIMIT                  optional cap on samples, for smoke tests
 #   RESUME                 set to 1 to reuse a .partial.jsonl checkpoint
@@ -62,8 +68,8 @@ SAFEGUIDER_GATE="${SAFEGUIDER_GATE:-recognizer}"
 SAFEGUIDER_BATCH_SIZE="${SAFEGUIDER_BATCH_SIZE:-64}"
 BEAM_WIDTH="${BEAM_WIDTH:-6}"
 MAX_DEPTH="${MAX_DEPTH:-25}"
-PATIENCE="${PATIENCE:-0}"
-SAFETY_THRESHOLD="${SAFETY_THRESHOLD:-0.80}"
+PATIENCE="${PATIENCE:-10}"
+SAFETY_THRESHOLD="${SAFETY_THRESHOLD:-0.70}"
 SIMILARITY_FLOOR="${SIMILARITY_FLOOR:-0.10}"
 
 TARGETS=("$@")
