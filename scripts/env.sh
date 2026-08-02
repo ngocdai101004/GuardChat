@@ -50,6 +50,10 @@ QWEN3GUARD_WEIGHTS="${QWEN3GUARD_WEIGHTS:-${REPO_ROOT}/src/Qwen3Guard/weights/Qw
 QWEN_WEIGHTS="${QWEN_WEIGHTS:-${REPO_ROOT}/src/Qwen/weights/Qwen2.5-7B-Instruct}"
 LLAMA_WEIGHTS="${LLAMA_WEIGHTS:-${REPO_ROOT}/src/Llama/weights/Llama-3.1-8B-Instruct}"
 
+# SBERT sentence encoder used for the Task-2 semantic-similarity metric
+# (~440 MB, open access). Not a baseline - it scores finished rewrites.
+SBERT_WEIGHTS="${SBERT_WEIGHTS:-${REPO_ROOT}/src/SBERT/weights/all-mpnet-base-v2}"
+
 # ---------------- Runtime defaults ----------------
 
 # Python interpreter. Use a venv-local python by exporting PYTHON before
@@ -140,5 +144,5 @@ export GUARDCHAT_TRAIN_SPLIT GUARDCHAT_TEST_SPLIT
 export SAFEGUIDER_RECOG_WEIGHTS SAFEGUIDER_BINARY_WEIGHTS
 export BILSTM_WEIGHTS BERT_WEIGHTS
 export LLAMAGUARD_WEIGHTS QWEN_WEIGHTS LLAMA_WEIGHTS SHIELDGEMMA_WEIGHTS
-export QWEN3GUARD_WEIGHTS
+export QWEN3GUARD_WEIGHTS SBERT_WEIGHTS
 export PYTHON DTYPE TEXT_KIND

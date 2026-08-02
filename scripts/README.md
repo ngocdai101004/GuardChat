@@ -14,7 +14,7 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | Script | Purpose |
 |--------|---------|
 | `env.sh` | Sourced by every other script. Defines path / runtime defaults and helper functions. Override anything by `export`-ing before invoking. |
-| `download_weights.sh` | Snapshot-download Llama-Guard-3-8B / Llama-3.1-8B-Instruct (gated, needs HF token) and Qwen2.5-7B-Instruct + the CLIP encoder used by SafeGuider (open access). |
+| `download_weights.sh` | Snapshot-download Llama-Guard-3-8B / Llama-3.1-8B-Instruct (gated, needs HF token) and Qwen2.5-7B-Instruct + the CLIP encoder used by SafeGuider + the SBERT similarity encoder (open access). |
 | `train_task1_supervised.sh` | Train the three supervised Task-1 baselines (BiLSTM, BERT, SafeGuider). Recipe matches paper Section 6.1. |
 | `benchmark_task1.sh` | Evaluate Task 1 across all seven baselines (BiLSTM, BERT, SafeGuider, Llama-Guard, Qwen, ShieldGemma, Qwen3Guard). |
 | `benchmark_task1_llamaguard.sh` | Llama-Guard-3-8B alone, over the three input representations. Weights auto-download into `src/LlamaGuard/weights/`. See `docs/task1-llamaguard.md`. |
@@ -24,6 +24,7 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | `benchmark_task2_gemini.sh` | Gemini Flash alone, over both Task-2 representations (enhanced prompt + conversation). Resumable; API key from env or `.env`. See `src/Gemini/README.md`. |
 | `benchmark_task2_llama.sh` | Llama-3.1-8B-Instruct alone, same two representations. Gated repo — needs `HF_TOKEN`. See `src/Llama/README.md`. |
 | `benchmark_task2_safeguider.sh` | SafeGuider beam-search rewriter alone, same two representations. No API key and no generation — needs `SD1.4_safeguider.pt`. See `src/SafeGuider/README.md`. |
+| `eval_task2_similarity.sh` | Score finished Task-2 rewrites for semantic preservation with SBERT (`all-mpnet-base-v2`). Offline metric pass over `rewritten_text` — no rewriter runs, no API budget. Replaces the CLIP similarity of the first revision. See `src/SBERT/README.md`. |
 | `benchmark_all.sh` | End-to-end: train + Task 1 + Task 2. `SKIP_TRAIN=1` to skip the training step. |
 
 ## Common usage
@@ -55,6 +56,9 @@ SKIP_TRAIN=1 bash scripts/benchmark_all.sh
   metrics + predictions, one file per input representation.
 * `experiment_results/task2/{gemini,llama,safeguider}/{baseline}_task2_{prompt,conversation}.json`
   — Task 2 rewrites + summary, one file per representation.
+* `experiment_results/task2/similarity/{baseline}_task2_{prompt,conversation}_sbert.json`
+  — SBERT semantic similarity per sample, plus `sbert_similarity_summary.json`
+  with the cross-baseline table.
 * `${RESULTS_DIR}/{baseline}_train_history.json` — per-epoch training metrics
   for the supervised models.
 
@@ -111,7 +115,14 @@ Everything else has a sensible default in `env.sh`.
 | `SAFEGUIDER_GATE` | `recognizer` | `recognizer` = published pipeline (safe-judged prompts pass through untouched); `always` = rewrite every row |
 | `SAFEGUIDER_BATCH_SIZE` | `64` | Beam candidates per encoder pass; throughput only |
 | `BEAM_WIDTH` / `MAX_DEPTH` | `6` / `25` | Beam-search size, upstream defaults |
-| `SAFETY_THRESHOLD` / `SIMILARITY_FLOOR` | `0.80` / `0.10` | Beam-search accept thresholds, upstream defaults |
+| `SAFETY_THRESHOLD` / `SIMILARITY_FLOOR` | `0.70` / `0.10` | Beam-search accept thresholds. `0.70` **deviates** from upstream's `0.80` |
+| `PATIENCE` | `10` | Abandon a beam search after N depths with no gain. **No upstream equivalent**; set `0` for published behaviour |
+| `TASK2_RESULTS` | `experiment_results/task2` | Root scanned by `eval_task2_similarity.sh` for finished rewrites |
+| `SIMILARITY_OUT` | `${TASK2_RESULTS}/similarity` | Where SBERT similarity sidecars land |
+| `SBERT_WEIGHTS` | `src/SBERT/weights/all-mpnet-base-v2` | Similarity encoder snapshot; auto-populated on first run |
+| `SBERT_BATCH_SIZE` | `64` | Texts per encoder pass; throughput only, scores do not depend on it |
+| `MAX_SEQ_LENGTH` | unset | Override the encoder's 384-token window (mpnet caps at 512) |
+| `PER_TURN` | `1` | Set `0` to skip the per-turn conversation similarity |
 | `LIMIT` | unset | Cap the sample count (smoke tests) |
 | `RESUME` | `0` | Set to `1` to reuse a `.partial.jsonl` checkpoint |
 

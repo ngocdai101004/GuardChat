@@ -13,6 +13,9 @@
 #   safeguider  -> openai/clip-vit-large-patch14          (open access; for the
 #                                                          CLIP encoder used by
 #                                                          src/SafeGuider/)
+#   sbert       -> sentence-transformers/all-mpnet-base-v2 (open access; the
+#                                                          Task-2 semantic
+#                                                          similarity metric)
 #
 # Notes:
 #   * BiLSTM / BERT / SafeGuider Task-1 head are TRAINED from scratch on
@@ -38,7 +41,7 @@ fi
 
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-    TARGETS=(llamaguard llama qwen safeguider)
+    TARGETS=(llamaguard llama qwen safeguider sbert)
 fi
 
 require_hf_token() {
@@ -95,17 +98,24 @@ PY
     fi
 }
 
+download_sbert() {
+    section "Downloading sentence-transformers/all-mpnet-base-v2 (Task-2 metric)"
+    run_module src.SBERT.download_weights --local-dir "${SBERT_WEIGHTS}"
+}
+
 for tgt in "${TARGETS[@]}"; do
     case "${tgt}" in
         llamaguard) download_llamaguard ;;
         llama)      download_llama ;;
         qwen)       download_qwen ;;
         safeguider) download_safeguider_clip ;;
+        sbert)      download_sbert ;;
         all)
             download_llamaguard
             download_llama
             download_qwen
             download_safeguider_clip
+            download_sbert
             ;;
         *)
             echo "Unknown target: ${tgt}" >&2

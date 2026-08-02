@@ -1,0 +1,22 @@
+# SBERT semantic-similarity metric for Task 2.
+#
+#   pip install -r src/SBERT/requirements.txt
+#
+# Deliberately does NOT depend on the `sentence-transformers` package.
+# The model card publishes an equivalent plain-transformers path (mean
+# pooling over the attention mask, then L2 normalisation) and that is
+# what src/SBERT/model.py implements, reading the pooling mode and
+# sequence length out of the checkpoint so the two cannot silently
+# diverge. One less dependency, and no version pinning against a package
+# that periodically changes its default pooling behaviour.
+#
+# Every requirement below is already satisfied by any environment that
+# can run the SafeGuider or Llama baselines - this file exists so the
+# metric can be scored on a machine that runs nothing else.
+
+torch>=2.1
+# AutoTokenizer / AutoModel for mpnet.
+transformers>=4.40
+# snapshot_download into src/SBERT/weights/.
+huggingface_hub>=0.23
+safetensors>=0.4

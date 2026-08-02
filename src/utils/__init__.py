@@ -7,7 +7,7 @@ Centralises:
       plus the three Task-1 input representations (``prompt`` /
       ``raw_prompt`` / ``conversation``).
     * Task 1 / Task 2 evaluation metrics (Macro-F1, Recall, ASR,
-      CLIP cosine similarity).
+      SBERT cosine similarity; CLIP kept for the earlier revision).
     * HuggingFace plumbing for the zero-shot baselines: token
       resolution, snapshot download into a module-local ``weights/``
       folder, device / dtype selection.
@@ -35,13 +35,16 @@ from .data import (
     text_for_kind,
 )
 from .metrics import (
+    SIMILARITY_BINS,
     attack_success_rate,
     binary_from_multilabel,
     clip_cosine_similarity,
     macro_f1,
     per_class_f1,
     recall_score,
+    sbert_cosine_similarity,
     summarise_recognition,
+    summarise_similarity,
 )
 from .hf_model import (
     DEFAULT_IGNORE_PATTERNS,
@@ -117,13 +120,16 @@ __all__ = [
     "normalise_text_kind",
     "split_texts_and_labels",
     "text_for_kind",
+    "SIMILARITY_BINS",
     "attack_success_rate",
     "binary_from_multilabel",
     "clip_cosine_similarity",
     "macro_f1",
     "per_class_f1",
     "recall_score",
+    "sbert_cosine_similarity",
     "summarise_recognition",
+    "summarise_similarity",
     "DEFAULT_IGNORE_PATTERNS",
     "DTYPE_CHOICES",
     "bnb_config",

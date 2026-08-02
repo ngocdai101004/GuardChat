@@ -35,6 +35,11 @@
 #                          through unmodified. 'always' rewrites every row.
 #   SAFEGUIDER_BATCH_SIZE  default: 64   candidates per encoder pass;
 #                          throughput only, results do not depend on it
+#   SAFEGUIDER_WORKERS     default: 1    worker PROCESSES. This, not
+#                          BATCH_SIZE, is the throughput lever: the search
+#                          pins one core and leaves the GPU ~50% idle.
+#                          Each worker needs ~1.2 GiB of GPU memory.
+#                          Set 0 to pick from cores and free GPU memory.
 #   BEAM_WIDTH             default: 6
 #   MAX_DEPTH              default: 25
 #   PATIENCE               default: 10   (upstream has no such cap)
@@ -66,6 +71,7 @@ SAFEGUIDER_OUT="${SAFEGUIDER_OUT:-${REPO_ROOT}/experiment_results/task2/safeguid
 SAFEGUIDER_ENCODER="${SAFEGUIDER_ENCODER:-openai/clip-vit-large-patch14}"
 SAFEGUIDER_GATE="${SAFEGUIDER_GATE:-recognizer}"
 SAFEGUIDER_BATCH_SIZE="${SAFEGUIDER_BATCH_SIZE:-64}"
+SAFEGUIDER_WORKERS="${SAFEGUIDER_WORKERS:-1}"
 BEAM_WIDTH="${BEAM_WIDTH:-6}"
 MAX_DEPTH="${MAX_DEPTH:-25}"
 PATIENCE="${PATIENCE:-10}"
@@ -121,6 +127,7 @@ for kind in "${KINDS[@]}"; do
         --safety-threshold "${SAFETY_THRESHOLD}" \
         --similarity-floor "${SIMILARITY_FLOOR}" \
         --batch-size "${SAFEGUIDER_BATCH_SIZE}" \
+        --workers "${SAFEGUIDER_WORKERS}" \
         --patience "${PATIENCE}" \
         --output-dir "${SAFEGUIDER_OUT}" \
         ${EXTRA[@]+"${EXTRA[@]}"}

@@ -64,6 +64,11 @@ from src.SafeGuider.rewrite import (  # noqa: E402
     GATE_MODES,
     RewritePipeline,
 )
+from src.SafeGuider.parallel import (  # noqa: E402
+    ParallelRewriter,
+    WorkerConfig,
+    suggest_workers,
+)
 
 
 SLUG = "safeguider"
@@ -143,6 +148,16 @@ def build_parser() -> argparse.ArgumentParser:
                         "capping depth discards successes to save time on "
                         "hopeless cases, while patience abandons only the "
                         "plateaus. Per-sample effect is in extra.halt_reason.")
+    p.add_argument("--workers", type=int, default=1,
+                   help="Worker PROCESSES to fan the search out across. "
+                        "The search pins one core and leaves the GPU ~50%% "
+                        "idle, so this is the main throughput lever - not "
+                        "--batch-size. Threads would not help: the hot loop "
+                        "is Python bytecode and the GIL serialises it. Each "
+                        "worker holds its own model copy (~1.2 GiB of GPU "
+                        "memory), which usually caps the fan-out before the "
+                        "core count does. 0 = pick from cores and free GPU "
+                        "memory. Default: 1 (single process).")
     p.add_argument("--limit", type=int, default=None,
                    help="Cap the number of samples (smoke tests).")
     p.add_argument("--output-dir", type=str, default=DEFAULT_OUTPUT_DIR,
@@ -156,6 +171,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--verbose", action="store_true",
                    help="Log encoder token counts and per-depth beam state.")
     return p
+
+
+def _asdict(cfg: WorkerConfig) -> Dict[str, Any]:
+    """WorkerConfig -> RewritePipeline.from_weights kwargs."""
+    from dataclasses import asdict as _dc_asdict
+    return _dc_asdict(cfg)
 
 
 def _report_failures(summary: Dict[str, Any]) -> None:
@@ -269,7 +290,7 @@ def main() -> int:
     else:
         kinds = [normalise_rewrite_kind(args.text_kind)]
 
-    pipe = RewritePipeline.from_weights(
+    cfg = WorkerConfig(
         weights=args.weights,
         encoder_model=args.encoder_model,
         # CLIPEncoder auto-detects on None.
@@ -281,12 +302,23 @@ def main() -> int:
         batch_size=args.batch_size,
         patience=args.patience,
         gate=args.gate,
-        verbose=args.verbose,
     )
-    print(f"Loaded {args.weights}")
-    print(f"  encoder {args.encoder_model} on {pipe.encoder.device} "
-          f"(dim {pipe.encoder.hidden_size}, window "
-          f"{pipe.encoder.max_length} tokens)")
+    workers = suggest_workers() if args.workers == 0 else max(1, args.workers)
+
+    if workers > 1:
+        # Do NOT build a pipeline here: it would pin a CUDA context and
+        # ~740 MiB in the parent for nothing. Workers load their own.
+        runner: Any = ParallelRewriter(cfg, workers=workers)
+        print(f"Loaded {args.weights}")
+        print(f"  encoder {args.encoder_model}, {workers} worker processes "
+              f"(~{workers * 1.2:.1f} GiB GPU, {workers} cores)")
+    else:
+        runner = RewritePipeline.from_weights(verbose=args.verbose,
+                                              **_asdict(cfg))
+        print(f"Loaded {args.weights}")
+        print(f"  encoder {args.encoder_model} on {runner.encoder.device} "
+              f"(dim {runner.encoder.hidden_size}, window "
+              f"{runner.encoder.max_length} tokens)")
     print(f"  beam width {args.beam_width}, max depth {args.max_depth}, "
           f"safety >= {args.safety_threshold}, similarity >= "
           f"{args.similarity_floor}, gate={args.gate}")
@@ -300,7 +332,7 @@ def main() -> int:
         "model": DEFAULT_MODEL_NAME,
         "weights": args.weights,
         "encoder_model": args.encoder_model,
-        "device": str(pipe.encoder.device),
+        "device": cfg.device or "auto",
         "test": args.test,
         "num_samples": len(samples),
         "gate": args.gate,
@@ -310,6 +342,7 @@ def main() -> int:
         "similarity_floor": args.similarity_floor,
         "batch_size": args.batch_size,
         "patience": args.patience,
+        "workers": workers,
         "conversation_strategy": "per_turn",
     }
 
@@ -317,8 +350,8 @@ def main() -> int:
     for kind in kinds:
         print(f"\n=== {kind} ===")
         res = rewrite_kind(
-            lambda pending, k, cb: pipe.rewrite_samples(pending, kind=k,
-                                                        on_result=cb),
+            lambda pending, k, cb: runner.rewrite_samples(pending, kind=k,
+                                                          on_result=cb),
             samples, kind, args.output_dir, SLUG, resume=args.resume,
         )
         out_path = save_rewrite_kind(res, kind, meta,
