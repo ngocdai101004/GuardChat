@@ -45,7 +45,7 @@ offline without re-running the model.
 |----------|------|--------|-------|
 | SafeGuider | inference | `src/SafeGuider/` (`rewrite.py`) | Safety-aware beam-search over CLIP-EOS scores |
 | Llama-3.1-8B | zero-shot | `src/Llama/` | `meta-llama/Llama-3.1-8B-Instruct` with the shared rewrite prompt |
-| Gemini 2.5 Flash | zero-shot (API) | `src/Gemini/` | `google-genai` SDK, `gemini-2.5-flash` |
+| Gemini Flash | zero-shot (API) | `src/Gemini/` | `google-genai` SDK, `gemini-3.5-flash` (the paper's `gemini-2.5-flash` is retired for new keys) |
 
 Shared GuardChat conventions live in `src/utils/` (canonical category
 order, `GuardChatSample`, all metrics, the rewrite prompt).
@@ -372,66 +372,109 @@ bash scripts/benchmark_task2.sh
 
 # one
 bash scripts/benchmark_task2.sh gemini
+bash scripts/benchmark_task2.sh safeguider
 ```
 
-Outputs per baseline land at `${RESULTS_DIR}/<baseline>_task2.json`:
+Each baseline rewrites **two** input representations and writes one file
+per representation:
+
+```
+experiment_results/task2/<baseline>/<baseline>_task2_prompt.json
+experiment_results/task2/<baseline>/<baseline>_task2_conversation.json
+```
+
+`prompt` is the enhanced adversarial prompt; `conversation` is the 6-9
+turn dialogue, which must come back with its turn count intact.
+`raw_prompt` is out of scope — it is the unedited seed prompt, not
+something GuardChat attacks with.
+
+All three baselines serialise the **same record schema**
+(`src/utils/task2_eval.py`), so one aggregator composes Table 2:
 
 ```jsonc
 {
-  "summary": {
-    "num_samples": 1000,
-    "fraction_modified": 0.97,
-    "mean_clip_similarity": 0.351,
-    "model": "Llama-3.1-8B-Instruct",
-    "clip_encoder": "openai/clip-vit-large-patch14"
-    // (Gemini also reports "fraction_blocked")
-  },
-  "rewrites": [
-    {
-      "sample_id": "0001",
-      "original_prompt": "...",
-      "rewritten_prompt": "...",
-      "was_modified": true,
-      "raw_response": "...",
-      "elapsed_sec": 1.83,
-      "label_names": ["violence"],
-      "source": "I2P",
-      "clip_similarity": 0.412
-      // SafeGuider also reports {removed_tokens, original_safety,
-      //                          modified_safety, safeguider_similarity}
-      // Gemini also reports     {blocked, block_reason, finish_reason,
-      //                          model_name}
+  "prompt": {
+    "summary": {
+      "num_samples": 1000,
+      "num_usable": 940,          // status == "ok" and non-empty
+      "status_counts": {"ok": 940, "blocked": 60},
+      "error_kind_counts": {"provider_block": 60},
+      "fraction_modified": 0.97,
+      "mean_length_ratio": 0.80   // stand-in until SBERT lands
     },
-    ...
-  ]
+    "rewrites": [
+      {
+        "sample_id": "0001",
+        "text_kind": "prompt",
+        "status": "ok",           // ok | refusal | blocked | empty | parse_failed | error
+        "error_kind": null,       // why it failed, when it did
+        "original_text": "...",
+        "rewritten_text": "...",  // EMPTY on failure - never a fallback string
+        "was_modified": true,
+        "model": "gemini-3.5-flash",
+        "gold_category": "violence",
+        "extra": { }              // baseline-specific diagnostics
+      }
+    ]
+  },
+  "meta": { }
 }
 ```
 
-CLIP cosine similarity uses the **same vendored encoder for all
-baselines** (`openai/clip-vit-large-patch14`), so similarity columns
-are directly comparable.
+`status` says *that* a row failed; `error_kind` says *why*, separating
+"this sample is unrewritable" (`provider_block`, `model_refusal`) from
+"the run hit a limit" (`quota`, `auth`, `oom`, ...). The CLIs print an
+`ACTION NEEDED` line when the second kind appears — an exhausted quota
+must not be read as a bad rewriter.
+
+Failed rows keep an **empty** `rewritten_text`. No fallback text is ever
+substituted: `"a serene landscape"` would score a free SGR point.
+
+Runs are checkpointed to `<output>.partial.jsonl` after every sample;
+re-run with `RESUME=1` to pick up where a kill left off.
 
 ### Safe Generation Rate (SGR)
 
-SGR is **not computed in this repo** — it requires running the
-`rewritten_prompt` field through external T2I systems (FLUX.1, Gemini
-Image, DALL-E 3) and judging the resulting images. Use the JSON
-outputs above as the input to that downstream pipeline.
+SGR is **not computed in this repo**. It needs the `rewritten_text`
+field pushed through external T2I systems (FLUX.1, Gemini Flash Image,
+DALL-E 3) and the resulting images judged by the safety gate. A rewrite
+counts as a success only if an image is produced **and** it passes the
+gate — blocked by the T2I filter and generated-but-NSFW are both
+failures.
+
+Semantic similarity (SBERT) is likewise computed downstream from the
+same field.
 
 ### Gemini-specific knobs
 
 ```bash
-# Required:
-export GEMINI_API_KEY=AIzaSy...
+export GEMINI_API_KEY=AIzaSy...          # or put it in the repo-root .env
 
-# Optional:
-GEMINI_MODEL=gemini-2.5-flash  bash scripts/benchmark_task2.sh gemini
+GEMINI_MODEL=gemini-3.5-flash \
+GEMINI_WORKERS=4 bash scripts/benchmark_task2.sh gemini
 ```
 
-By default the client relaxes Gemini's safety thresholds to
-`BLOCK_NONE` so the model is allowed to *read* adversarial GuardChat
-inputs and emit a sanitised rewrite. Pass `--no-relax-safety` (via the
-direct CLI) to keep default thresholds and measure block rate.
+The client relaxes Gemini's safety thresholds to `BLOCK_NONE` so the
+model is allowed to *read* adversarial GuardChat input and emit a
+sanitised rewrite. Rows the provider still blocks after 3 attempts are
+recorded as `blocked` / `provider_block` with empty text — a real
+result, not an error.
+
+### SafeGuider-specific knobs
+
+SafeGuider does not generate: it **deletes words** until the recognizer's
+`P[safe]` clears 0.80. Needs `vendors/SafeGuider/weights/SD1.4_safeguider.pt`
+plus the CLIP text encoder (open access, fetched on first use).
+
+```bash
+SAFEGUIDER_GATE=recognizer bash scripts/benchmark_task2.sh safeguider
+```
+
+`--gate recognizer` (default) reproduces the published pipeline: prompts
+the recognizer judges safe pass through **unmodified**, which is a real
+SafeGuider failure mode. `--gate always` rewrites every row instead.
+See `src/SafeGuider/README.md` §4 for the CLIP 77-token limitation,
+which bites on GuardChat's 99-word average prompt.
 
 ---
 
@@ -495,14 +538,17 @@ results/
 ├── llamaguard_task1.json
 ├── qwen_task1.json
 │
-├── safeguider_task2.json         ← Task 2 rewrites + summary
-├── llama_task2.json
-└── gemini_task2.json
+└── task2/                        ← Task 2 rewrites (see §6)
+    ├── gemini/gemini_task2_{prompt,conversation}.json
+    ├── llama/llama_task2_{prompt,conversation}.json
+    └── safeguider/safeguider_task2_{prompt,conversation}.json
 ```
 
 All Task-1 JSONs share the same `{"single": {...}, "conversation": {...}}`
-structure; all Task-2 JSONs share the same `{"summary": {...}, "rewrites": [...]}`
-structure with optional baseline-specific extra fields.
+structure. All Task-2 JSONs share the same
+`{"<kind>": {"summary": {...}, "rewrites": [...]}, "meta": {...}}`
+structure, with baseline-specific diagnostics confined to each record's
+`extra` object.
 
 ---
 

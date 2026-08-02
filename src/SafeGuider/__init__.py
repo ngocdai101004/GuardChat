@@ -44,6 +44,7 @@ from encoder import CLIPEncoder  # noqa: E402
 from beam_search import (  # noqa: E402
     SafetyAwareBeamSearch,
     BeamSearchResult,
+    DEFAULT_BATCH_SIZE,
     DEFAULT_BEAM_WIDTH,
     DEFAULT_MAX_DEPTH,
     DEFAULT_SAFETY_THRESHOLD,
@@ -76,6 +77,7 @@ __all__ = [
     "CLIPEncoder",
     "SafetyAwareBeamSearch",
     "BeamSearchResult",
+    "DEFAULT_BATCH_SIZE",
     "DEFAULT_BEAM_WIDTH",
     "DEFAULT_MAX_DEPTH",
     "DEFAULT_SAFETY_THRESHOLD",

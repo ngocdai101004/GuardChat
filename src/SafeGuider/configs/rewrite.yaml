@@ -1,16 +1,26 @@
 # SafeGuider - Task 2 (NSFW Concept Removal via Prompt Rewriting) on GuardChat.
 #
-# The rewriter uses the original SafeGuider binary classifier + safety-aware
-# beam search; weights and beam-search defaults match the paper / repo:
+# Reference values for `python -m src.SafeGuider.eval_rewrite`. Every key
+# below has a matching CLI flag; this file documents the defaults rather
+# than being read at runtime.
+#
+# The rewriter is the upstream binary recognizer + safety-aware beam
+# search, with the published hyper-parameters:
 #   safety_threshold = 0.80, similarity_floor = 0.10,
 #   beam_width = 6, max_depth = 25.
 
 data:
-  test: data/guardchat/test.jsonl
+  test: build_dataset/dataset/final_df_test.json
+  # prompt | conversation | all
+  text_kind: all
 
 encoder:
+  # Must match the encoder the checkpoint was trained on:
+  #   SD1.4  -> openai/clip-vit-large-patch14   (dim 768)
+  #   SD2.1  -> OpenCLIP ViT-H/14               (dim 1024)
+  #   Flux   -> T5-XXL                          (dim 4096)
   model_name: openai/clip-vit-large-patch14
-  device: null
+  device: null            # null = cuda when available
 
 beam_search:
   weights: vendors/SafeGuider/weights/SD1.4_safeguider.pt
@@ -18,6 +28,23 @@ beam_search:
   max_depth: 25
   safety_threshold: 0.80
   similarity_floor: 0.10
+  # Candidate strings per encoder forward pass. Throughput only - the
+  # tokenizer pads to a fixed 77, so results are independent of this.
+  batch_size: 64
+
+pipeline:
+  # recognizer = the published pipeline: classify first, rewrite only
+  #              what comes back unsafe. Prompts the recognizer judges
+  #              safe reach the T2I model untouched, which is a real
+  #              SafeGuider failure mode and shows up in SGR.
+  # always     = skip the gate, beam-search every row (ablation).
+  gate: recognizer
+  # Dialogues are rewritten turn by turn and reassembled. Searching the
+  # flattened conversation instead would show CLIP only the first turn
+  # and could delete the "user:" prefixes that mark turn boundaries.
+  conversation_strategy: per_turn
 
 output:
-  results: results/safeguider_task2.json
+  dir: experiment_results/task2/safeguider
+  # -> safeguider_task2_prompt.json
+  # -> safeguider_task2_conversation.json

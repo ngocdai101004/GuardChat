@@ -1,26 +1,50 @@
-# vendors/SafeGuider — trimmed copy
+# vendors/SafeGuider — trimmed extract
 
-This folder is a **minimal extract** of the upstream SafeGuider input
-guard. Only the modules that `src/SafeGuider/` actually imports are
-kept here:
+Upstream: <https://github.com/pgqihere/safeguider> — *SafeGuider: Robust
+and Practical Content Safety Control for Text-to-Image Models*, ACM CCS
+2025.
 
-| File | Provides |
-|------|----------|
-| `classifier.py` | `ThreeLayerClassifier` (binary safety MLP, used by Task 2) |
-| `encoder.py` | `CLIPEncoder` (CLIP text-encoder + EOS embedding helper) |
-| `beam_search.py` | `SafetyAwareBeamSearch`, `BeamSearchResult`, default thresholds |
-| `weights/README.md` | How to obtain the binary safety classifier checkpoint |
+A **minimal extract** of the SafeGuider input guard: only what
+`src/SafeGuider/` imports.
 
-The upstream SafeGuider repository ships a much larger CLI / training
-pipeline (`recognizer.py`, `pipeline.py`, `prepare_embeddings.py`,
-`train.py`, `examples/`). Those entry points are **not used** by the
-GuardChat benchmark code in this repository, so they have been removed
-from the vendored copy to keep the repo lean.
+| File | Provides | Extracted from |
+|------|----------|----------------|
+| `classifier.py` | `ThreeLayerClassifier` (binary safety MLP) | `stable-diffusion-1.4/tools/classifier.py` |
+| `encoder.py` | `CLIPEncoder` (CLIP text encoder + EOS embedding) | `recognizer.py` / LDM's `FrozenCLIPEmbedder` |
+| `beam_search.py` | `SafetyAwareBeamSearch`, `BeamSearchResult`, thresholds | `stable-diffusion-1.4/scripts/safeguider_gene.py` |
+| `weights/README.md` | How to obtain the recognizer checkpoint | — |
 
-If you need the full SafeGuider implementation, refer to the upstream
-release. The three modules above are imported by `src/SafeGuider/` via
-a `sys.path` shim — see `src/SafeGuider/__init__.py` for the bootstrap
-logic.
+Upstream ships the rewriter as ~200 lines inlined into a Stable
+Diffusion sampling loop, entangled with LDM model loading, DDIM
+sampling and PNG writing — there is no importable rewrite module. The
+extraction pulls that logic out and swaps `model.get_learned_conditioning`
+for a standalone CLIP text encoder, so the rewriter runs without Stable
+Diffusion checked out. The embedding is the same one either way: CLIP
+`last_hidden_state` at the EOS position, no attention mask, padded to 77.
+
+## Deviations from upstream
+
+Two, both behaviour-preserving, both spelled out at the top of
+`beam_search.py`:
+
+* **Batched scoring.** Upstream encodes one candidate per forward pass.
+  Candidates within a beam step are independent and the tokenizer pads
+  to a fixed 77, so batching them is numerically identical — it changes
+  the cost, not the result. Without it a 1,000-sample GuardChat run
+  takes hours.
+* **Termination.** Upstream keeps iterating depths after a step expands
+  nothing; here that breaks the loop.
+
+The thresholds (0.80 / 0.10), beam width 6, depth `min(25, len(words)-1)`,
+the sort keys, the tie-breaks, the fallback rule and the "class 1 = safe"
+convention all match `safeguider_gene.py` line for line.
+
+Upstream's training and empirical-study code (`tools/train.py`,
+`tools/json2embedding.py`, `Emperical_Study/`) and the whole
+`stable-diffusion-1.4/` tree are **not** vendored — the GuardChat
+benchmark does not use them. Refer to the upstream release if you need
+them. The three modules above are imported by `src/SafeGuider/` via a
+`sys.path` shim; see `src/SafeGuider/__init__.py`.
 
 ## Weights
 

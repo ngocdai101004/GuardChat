@@ -295,6 +295,20 @@ class CLIPEncoder:
         """Utility: returns only the EOS embedding, shape (B, D)."""
         return self.encode(prompts).eos_embedding
 
+    def token_count(self, text: str) -> int:
+        """Token count BEFORE truncation (BOS + content + EOS).
+
+        Anything above ``max_length`` is dropped by :meth:`encode` and is
+        therefore invisible to the classifier — a word out there cannot
+        change the safety score, so the beam search can never find it.
+        Callers use this to report how much of a prompt SafeGuider
+        actually saw.
+        """
+        ids = self.tokenizer(
+            text, truncation=False, padding=False, return_attention_mask=False,
+        )["input_ids"]
+        return len(ids)
+
     # ----------------------------- Helpers ------------------------------ #
 
     def _eos_positions(self, input_ids: Tensor) -> Tensor:

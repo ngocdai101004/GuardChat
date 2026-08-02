@@ -23,6 +23,7 @@ DATA_DIR=/mnt/guardchat RESULTS_DIR=/mnt/results DTYPE=nf4 \
 | `benchmark_task2.sh` | Evaluate Task 2 across the three baselines (SafeGuider beam-search, Llama-3.1-8B, Gemini Flash API). |
 | `benchmark_task2_gemini.sh` | Gemini Flash alone, over both Task-2 representations (enhanced prompt + conversation). Resumable; API key from env or `.env`. See `src/Gemini/README.md`. |
 | `benchmark_task2_llama.sh` | Llama-3.1-8B-Instruct alone, same two representations. Gated repo — needs `HF_TOKEN`. See `src/Llama/README.md`. |
+| `benchmark_task2_safeguider.sh` | SafeGuider beam-search rewriter alone, same two representations. No API key and no generation — needs `SD1.4_safeguider.pt`. See `src/SafeGuider/README.md`. |
 | `benchmark_all.sh` | End-to-end: train + Task 1 + Task 2. `SKIP_TRAIN=1` to skip the training step. |
 
 ## Common usage
@@ -52,10 +53,8 @@ SKIP_TRAIN=1 bash scripts/benchmark_all.sh
 
 * `experiment_results/task1/{baseline}/{baseline}_task1_{kind}.json` — Task 1
   metrics + predictions, one file per input representation.
-* `experiment_results/task2/{gemini,llama}/{baseline}_task2_{prompt,conversation}.json`
+* `experiment_results/task2/{gemini,llama,safeguider}/{baseline}_task2_{prompt,conversation}.json`
   — Task 2 rewrites + summary, one file per representation.
-* `${RESULTS_DIR}/safeguider_task2.json` — the older single-file Task 2 shape,
-  still used by the SafeGuider rewriter.
 * `${RESULTS_DIR}/{baseline}_train_history.json` — per-epoch training metrics
   for the supervised models.
 
@@ -106,6 +105,13 @@ Everything else has a sensible default in `env.sh`.
 | `LLAMA_BATCH_SIZE` | `8` | Sequences generated together; lower this first on OOM |
 | `LLAMA_RETRIES` | `3` | Attempts per sample; attempts after the first are sampled |
 | `DTYPE_LLAMA` | `auto` | Llama Task-2 weight dtype |
+| `SAFEGUIDER_TEST` | `build_dataset/dataset/final_df_test.json` | Test split for `benchmark_task2_safeguider.sh` |
+| `SAFEGUIDER_OUT` | `experiment_results/task2/safeguider` | Where the Task-2 SafeGuider rewrites land |
+| `SAFEGUIDER_ENCODER` | `openai/clip-vit-large-patch14` | Text encoder; must match the recognizer checkpoint |
+| `SAFEGUIDER_GATE` | `recognizer` | `recognizer` = published pipeline (safe-judged prompts pass through untouched); `always` = rewrite every row |
+| `SAFEGUIDER_BATCH_SIZE` | `64` | Beam candidates per encoder pass; throughput only |
+| `BEAM_WIDTH` / `MAX_DEPTH` | `6` / `25` | Beam-search size, upstream defaults |
+| `SAFETY_THRESHOLD` / `SIMILARITY_FLOOR` | `0.80` / `0.10` | Beam-search accept thresholds, upstream defaults |
 | `LIMIT` | unset | Cap the sample count (smoke tests) |
 | `RESUME` | `0` | Set to `1` to reuse a `.partial.jsonl` checkpoint |
 

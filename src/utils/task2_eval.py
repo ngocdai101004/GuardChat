@@ -180,6 +180,13 @@ class RewriteRecord:
     block_reason: Optional[str] = None
     finish_reason: Optional[str] = None
 
+    # Baseline-specific diagnostics that do not generalise across
+    # rewriters - SafeGuider's safety scores and deleted words, say.
+    # Kept in one nested object so the common fields stay identically
+    # shaped for every model and a cross-baseline aggregator can ignore
+    # this key entirely.
+    extra: Dict[str, Any] = field(default_factory=dict)
+
     @property
     def is_usable(self) -> bool:
         """True when this row can be handed to a T2I model as-is."""
@@ -215,6 +222,8 @@ class RewriteRecord:
                 "block_reason": self.block_reason,
                 "finish_reason": self.finish_reason,
             })
+        if self.extra:
+            out["extra"] = dict(self.extra)
         # Last, because it is long and noisy to read.
         out["raw_response"] = self.raw_response
         return out

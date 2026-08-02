@@ -1,24 +1,36 @@
-"""CLI: run SafeGuider Task 2 (NSFW concept removal via prompt rewriting).
+"""CLI: run SafeGuider Task-2 rewriting (safety-aware beam search) on GuardChat.
 
-Output schema is designed to feed two downstream evaluations:
-    1. CLIP cosine similarity between original and rewritten prompts
-       (computed here using the same CLIP text encoder used by SafeGuider).
-    2. Safe Generation Rate (SGR) against FLUX.1, Gemini, and DALL-E 3 -
-       run separately by feeding ``rewritten_prompt`` to each T2I system
-       and judging the resulting images. We keep this script T2I-free so
-       it has no proprietary-API dependencies.
-
-Usage:
     python -m src.SafeGuider.eval_rewrite \
-        --test data/guardchat/test.jsonl \
-        --weights vendors/SafeGuider/weights/SD1.4_safeguider.pt \
-        --output results/safeguider_task2.json
+        --test build_dataset/dataset/final_df_test.json \
+        --text-kind all \
+        --output-dir experiment_results/task2/safeguider
+
+``--text-kind all`` writes one JSON file per input representation:
+
+    safeguider_task2_prompt.json        enhanced prompt      -> P_safe
+    safeguider_task2_conversation.json  multi-turn dialogue  -> P_safe
+
+Output schema is the shared Task-2 schema
+(:class:`src.utils.RewriteRecord`), identical to what the Gemini and
+Llama rewriters produce, so one aggregator composes Table 2 across every
+row. SafeGuider's own diagnostics — recognizer scores, deleted words,
+CLIP truncation — ride along in the per-record ``extra`` object.
+
+Needs the upstream recognizer checkpoint at
+``vendors/SafeGuider/weights/SD1.4_safeguider.pt`` (from the SafeGuider
+release) and the CLIP text encoder, which is fetched into
+``vendors/SafeGuider/weights/clip-vit-large-patch14/`` on first use.
+
+This step produces P_safe only. Safe Generation Rate and SBERT semantic
+similarity are computed downstream from the ``rewritten_text`` field.
+
+Long runs are checkpointed to ``<output>.partial.jsonl`` after every
+sample; re-running with ``--resume`` skips whatever is already there.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from typing import Any, Dict, List
@@ -29,105 +41,237 @@ _REPO_ROOT = os.path.normpath(os.path.join(_HERE, "..", ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-import numpy as np  # noqa: E402
-
+from src.utils import (  # noqa: E402
+    REWRITE_KINDS,
+    load_guardchat,
+    normalise_rewrite_kind,
+    print_summary,
+    rewrite_kind,
+    save_rewrite_kind,
+)
 from src.SafeGuider import (  # noqa: E402
+    DEFAULT_BATCH_SIZE,
     DEFAULT_BEAM_WIDTH,
     DEFAULT_MAX_DEPTH,
     DEFAULT_SAFETY_THRESHOLD,
     DEFAULT_SIMILARITY_FLOOR,
 )
-from src.utils import clip_cosine_similarity, load_guardchat  # noqa: E402
-from src.SafeGuider.rewrite import RewritePipeline  # noqa: E402
+from src.SafeGuider.rewrite import (  # noqa: E402
+    DEFAULT_ENCODER_MODEL,
+    DEFAULT_MODEL_NAME,
+    DEFAULT_WEIGHTS,
+    GATE_MODES,
+    RewritePipeline,
+)
 
 
-def _summarise(records: List[Dict[str, Any]]) -> Dict[str, float]:
-    if not records:
-        return {}
-    sims = [r["clip_similarity"] for r in records if r.get("clip_similarity") is not None]
-    modified = sum(1 for r in records if r["was_modified"])
-    return {
-        "num_samples": len(records),
-        "fraction_modified": modified / len(records),
-        "mean_clip_similarity": float(np.mean(sims)) if sims else 0.0,
-        "median_clip_similarity": float(np.median(sims)) if sims else 0.0,
-        "mean_safeguider_similarity": float(
-            np.mean([r["safeguider_similarity"] for r in records])
-        ),
-        "mean_modified_safety": float(
-            np.mean([r["modified_safety"] for r in records])
-        ),
-    }
+SLUG = "safeguider"
+DEFAULT_OUTPUT_DIR = os.path.join(_REPO_ROOT, "experiment_results", "task2", SLUG)
+
+# Failures that say something about the machine rather than about the
+# sample. A run carrying any of these is incomplete and should be
+# resumed, not reported. There is no provider here, so the API-side
+# kinds (quota, server_error, ...) cannot occur.
+INFRASTRUCTURE_ERROR_KINDS = frozenset({"oom", "network", "timeout", "unknown"})
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description="Run SafeGuider beam-search Task-2 rewriting on GuardChat."
+    )
+    p.add_argument("--test", type=str,
+                   default=os.path.join(_REPO_ROOT, "build_dataset", "dataset",
+                                        "final_df_test.json"),
+                   help="Local JSON/JSONL path or a HuggingFace repo id. "
+                        "Default: build_dataset/dataset/final_df_test.json.")
+    p.add_argument("--split", type=str, default="test",
+                   help="HF split when --test is a repo id. Default: test.")
+    p.add_argument("--text-kind", type=str, default="all",
+                   choices=list(REWRITE_KINDS) + ["single", "all"],
+                   help="Input representation to rewrite. 'all' runs "
+                        "prompt and conversation in one go (two output "
+                        "files) with the encoder loaded once.")
+    p.add_argument("--weights", type=str, default=DEFAULT_WEIGHTS,
+                   help="Upstream binary recognizer checkpoint. "
+                        "Default: vendors/SafeGuider/weights/"
+                        "SD1.4_safeguider.pt.")
+    p.add_argument("--encoder-model", type=str, default=DEFAULT_ENCODER_MODEL,
+                   help="Text encoder the recognizer was trained on. Must "
+                        "match the checkpoint: clip-vit-large-patch14 for "
+                        "SD1.4 (768), OpenCLIP ViT-H/14 for SD2.1 (1024), "
+                        "T5-XXL for Flux (4096).")
+    p.add_argument("--device", type=str, default="auto",
+                   choices=["auto", "cuda", "cpu"],
+                   help="Compute device. 'auto' picks cuda when available. "
+                        "Accepted (and equal to 'auto') so a shared "
+                        "DEVICE=auto in the environment does not have to be "
+                        "special-cased per baseline.")
+
+    p.add_argument("--gate", type=str, default="recognizer", choices=list(GATE_MODES),
+                   help="'recognizer' (default) reproduces the published "
+                        "pipeline: classify first, rewrite only what comes "
+                        "back unsafe, so prompts the recognizer misses pass "
+                        "through untouched. 'always' skips the gate and "
+                        "beam-searches every row, measuring the rewriter "
+                        "alone.")
+
+    # Beam-search hyper-parameters (upstream defaults).
+    p.add_argument("--beam-width", type=int, default=DEFAULT_BEAM_WIDTH,
+                   help=f"Candidates kept per depth. Default: {DEFAULT_BEAM_WIDTH}.")
+    p.add_argument("--max-depth", type=int, default=DEFAULT_MAX_DEPTH,
+                   help="Most words the search may delete. Capped at "
+                        f"len(words) - 1. Default: {DEFAULT_MAX_DEPTH}.")
+    p.add_argument("--safety-threshold", type=float, default=DEFAULT_SAFETY_THRESHOLD,
+                   help="P[safe] a candidate must reach to qualify. "
+                        f"Default: {DEFAULT_SAFETY_THRESHOLD}.")
+    p.add_argument("--similarity-floor", type=float, default=DEFAULT_SIMILARITY_FLOOR,
+                   help="Minimum CLIP-EOS cosine to the original. "
+                        f"Default: {DEFAULT_SIMILARITY_FLOOR}.")
+    p.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE,
+                   help="Candidate strings per encoder forward pass. Pure "
+                        "throughput knob - results do not depend on it. "
+                        f"Lower it on a small GPU. Default: {DEFAULT_BATCH_SIZE}.")
+
+    p.add_argument("--limit", type=int, default=None,
+                   help="Cap the number of samples (smoke tests).")
+    p.add_argument("--output-dir", type=str, default=DEFAULT_OUTPUT_DIR,
+                   help=f"Where the per-kind JSON files land. "
+                        f"Default: {DEFAULT_OUTPUT_DIR}.")
+    p.add_argument("--resume", action="store_true",
+                   help="Reuse any '<output>.partial.jsonl' checkpoint "
+                        "instead of re-searching from scratch.")
+    p.add_argument("--keep-checkpoint", action="store_true",
+                   help="Keep the .partial.jsonl file after a successful run.")
+    p.add_argument("--verbose", action="store_true",
+                   help="Log encoder token counts and per-depth beam state.")
+    return p
+
+
+def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -> None:
+    """Print the shared summary plus the SafeGuider-specific caveats."""
+    print_summary(summary)
+
+    failed = summary.get("num_samples", 0) - summary.get("num_usable", 0)
+    if failed:
+        errs: Dict[str, int] = summary.get("error_kind_counts") or {}
+        print(f"  WARNING: {failed}/{summary['num_samples']} samples produced "
+              f"no usable rewrite ({errs or summary['status_counts']}). These "
+              f"rows have an empty 'rewritten_text' and count as failures "
+              f"in SGR.")
+        infra = {k: v for k, v in errs.items() if k in INFRASTRUCTURE_ERROR_KINDS}
+        if infra:
+            print(f"  ACTION NEEDED: {sum(infra.values())} of those are machine "
+                  f"failures, not method behaviour ({infra}). Lower "
+                  f"--batch-size for 'oom', fix the cause otherwise, then "
+                  f"re-run with --resume.")
+
+    extras = [r.get("extra") or {} for r in records]
+    if not extras:
+        return
+
+    if kind == "conversation":
+        turns = sum(int(e.get("num_turns_gated_safe") or 0) for e in extras)
+        total = sum(len(r.get("original_turns") or []) for r in records)
+        truncated = sum(int(e.get("num_turns_truncated") or 0) for e in extras)
+        unit, gated = "turns", turns
+    else:
+        total = len(extras)
+        gated = sum(1 for e in extras if e.get("gated_safe"))
+        truncated = sum(1 for e in extras if e.get("truncated"))
+        unit = "prompts"
+
+    if total:
+        # The headline caveat: these rows reached the T2I model exactly as
+        # the attacker wrote them, so they are recognizer misses, not
+        # rewrites, and they will show up as SGR failures.
+        print(f"  gate: {gated}/{total} {unit} ({gated / total:.1%}) were judged "
+              f"SAFE by the recognizer and passed through unmodified.")
+        print(f"  encoder window: {truncated}/{total} {unit} "
+              f"({truncated / total:.1%}) exceed CLIP's 77 tokens, so their "
+              f"tail was never searched.")
+
+    outcomes: Dict[str, int] = {}
+    for e in extras:
+        rows = e.get("turns") if kind == "conversation" else [e]
+        for row in rows or []:
+            key = str(row.get("outcome") or ("gated_safe" if row.get("gated_safe")
+                                             else "n/a"))
+            outcomes[key] = outcomes.get(key, 0) + 1
+    if outcomes:
+        print(f"  search outcome: "
+              f"{', '.join(f'{k}={v}' for k, v in sorted(outcomes.items()))}")
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Run SafeGuider Task 2 (rewrite) on GuardChat.")
-    p.add_argument("--test", type=str, default="multimedia-synergy-lab/GuardChat",
-                   help="HuggingFace repo id (default 'multimedia-synergy-lab/"
-                        "GuardChat') or local JSON/JSONL path.")
-    p.add_argument("--split", type=str, default="test",
-                   help="HF split when --test is a repo id. Default: test.")
-    p.add_argument("--weights", required=True, type=str,
-                   help="SafeGuider binary classifier .pt path "
-                        "(e.g. vendors/SafeGuider/weights/SD1.4_safeguider.pt).")
-    p.add_argument("--encoder-model", type=str, default="openai/clip-vit-large-patch14")
-    p.add_argument("--device", type=str, default=None, choices=[None, "cuda", "cpu"])
-
-    # Beam-search hyper-params (mirror vendored defaults).
-    p.add_argument("--beam-width", type=int, default=DEFAULT_BEAM_WIDTH)
-    p.add_argument("--max-depth", type=int, default=DEFAULT_MAX_DEPTH)
-    p.add_argument("--safety-threshold", type=float, default=DEFAULT_SAFETY_THRESHOLD)
-    p.add_argument("--similarity-floor", type=float, default=DEFAULT_SIMILARITY_FLOOR)
-
-    p.add_argument("--limit", type=int, default=None,
-                   help="Optional cap on number of samples (for smoke tests).")
-    p.add_argument("--output", type=str, default=None,
-                   help="Where to dump the JSON of rewrite results.")
-    args = p.parse_args()
+    args = build_parser().parse_args()
 
     print(f"Loading test split from {args.test} (split={args.split})")
     samples = load_guardchat(args.test, split=args.split)
     if args.limit:
         samples = samples[: int(args.limit)]
-    print(f"  -> rewriting {len(samples)} samples")
+    print(f"  -> {len(samples)} samples")
 
-    pipe = RewritePipeline(
+    kinds: List[str]
+    if args.text_kind == "all":
+        kinds = list(REWRITE_KINDS)
+    else:
+        kinds = [normalise_rewrite_kind(args.text_kind)]
+
+    pipe = RewritePipeline.from_weights(
         weights=args.weights,
         encoder_model=args.encoder_model,
-        device=args.device,
+        # CLIPEncoder auto-detects on None.
+        device=None if args.device == "auto" else args.device,
         beam_width=args.beam_width,
         max_depth=args.max_depth,
         safety_threshold=args.safety_threshold,
         similarity_floor=args.similarity_floor,
+        batch_size=args.batch_size,
+        gate=args.gate,
+        verbose=args.verbose,
     )
+    print(f"Loaded {args.weights}")
+    print(f"  encoder {args.encoder_model} on {pipe.encoder.device} "
+          f"(dim {pipe.encoder.hidden_size}, window "
+          f"{pipe.encoder.max_length} tokens)")
+    print(f"  beam width {args.beam_width}, max depth {args.max_depth}, "
+          f"safety >= {args.safety_threshold}, similarity >= "
+          f"{args.similarity_floor}, gate={args.gate}")
 
-    results = pipe.rewrite_samples(samples)
+    meta: Dict[str, object] = {
+        "task": "task2_rewrite",
+        "model": DEFAULT_MODEL_NAME,
+        "weights": args.weights,
+        "encoder_model": args.encoder_model,
+        "device": str(pipe.encoder.device),
+        "test": args.test,
+        "num_samples": len(samples),
+        "gate": args.gate,
+        "beam_width": args.beam_width,
+        "max_depth": args.max_depth,
+        "safety_threshold": args.safety_threshold,
+        "similarity_floor": args.similarity_floor,
+        "batch_size": args.batch_size,
+        "conversation_strategy": "per_turn",
+    }
 
-    # CLIP cosine similarity on (original, rewritten) pairs - shared encoder.
-    originals = [r.original_prompt for r in results]
-    rewrites = [r.rewritten_prompt for r in results]
-    clip_sims = clip_cosine_similarity(pipe.encoder, originals, rewrites)
+    written: List[str] = []
+    for kind in kinds:
+        print(f"\n=== {kind} ===")
+        res = rewrite_kind(
+            lambda pending, k, cb: pipe.rewrite_samples(pending, kind=k,
+                                                        on_result=cb),
+            samples, kind, args.output_dir, SLUG, resume=args.resume,
+        )
+        out_path = save_rewrite_kind(res, kind, meta,
+                                     keep_checkpoint=args.keep_checkpoint)
+        written.append(out_path)
+        print(f"Saved -> {out_path}")
+        _report(kind, res["summary"], res["rewrites"])
 
-    records: List[Dict[str, Any]] = []
-    for r, sim in zip(results, clip_sims):
-        rec = r.to_dict()
-        rec["clip_similarity"] = float(sim)
-        records.append(rec)
-
-    summary = _summarise(records)
-    print("\n[Task 2 summary]")
-    for k, v in summary.items():
-        if isinstance(v, float):
-            print(f"  {k:>26}: {v:.4f}")
-        else:
-            print(f"  {k:>26}: {v}")
-
-    if args.output:
-        os.makedirs(os.path.dirname(os.path.abspath(args.output)) or ".", exist_ok=True)
-        payload = {"summary": summary, "rewrites": records}
-        with open(args.output, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-        print(f"\nSaved rewrite results -> {args.output}")
+    print("\nDone. Files written:")
+    for pth in written:
+        print(f"  {pth}")
     return 0
 
 

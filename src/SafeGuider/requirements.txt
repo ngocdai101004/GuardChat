@@ -1,0 +1,21 @@
+# SafeGuider baseline (Task 1 recognition + Task 2 beam-search rewriting).
+#
+#   pip install -r src/SafeGuider/requirements.txt
+#
+# No API key and no gated repo: the CLIP text encoder is open access and
+# the recognizer checkpoint (SD1.4_safeguider.pt) ships with the upstream
+# release - copy it to vendors/SafeGuider/weights/ by hand.
+#
+# Nothing is generated here, so there is no `accelerate` and no
+# quantisation dependency. The encoder is ~490 MB of text tower; the
+# recognizer MLP is 5 MB.
+
+torch>=2.1
+# CLIPTokenizer / CLIPTextModel.
+transformers>=4.40
+# snapshot_download for the encoder, into vendors/SafeGuider/weights/.
+huggingface_hub>=0.23
+safetensors>=0.4
+numpy>=1.24
+# Progress bars in the Task-2 loop; degrades gracefully when absent.
+tqdm>=4.66
