@@ -165,20 +165,24 @@ def _report(kind: str, summary: Dict[str, Any], records: List[Dict[str, Any]]) -
                   f"--batch-size for 'oom', fix the cause otherwise, then "
                   f"re-run with --resume.")
 
-    extras = [r.get("extra") or {} for r in records]
+    # Rows that failed carry no diagnostics at all. Counting them in the
+    # denominators below - while they can never contribute to a numerator
+    # - would quietly deflate every rate printed here.
+    extras = [r.get("extra") for r in records]
+    extras = [e for e in extras if e]
     if not extras:
         return
 
     if kind == "conversation":
-        turns = sum(int(e.get("num_turns_gated_safe") or 0) for e in extras)
-        total = sum(len(r.get("original_turns") or []) for r in records)
+        unit = "turns"
+        total = sum(len(e.get("turns") or []) for e in extras)
+        gated = sum(int(e.get("num_turns_gated_safe") or 0) for e in extras)
         truncated = sum(int(e.get("num_turns_truncated") or 0) for e in extras)
-        unit, gated = "turns", turns
     else:
+        unit = "prompts"
         total = len(extras)
         gated = sum(1 for e in extras if e.get("gated_safe"))
         truncated = sum(1 for e in extras if e.get("truncated"))
-        unit = "prompts"
 
     if total:
         # The headline caveat: these rows reached the T2I model exactly as

@@ -165,12 +165,23 @@ class RewritePipeline:
             if safe:
                 # Upstream behaviour: the recognizer cleared it, so the
                 # prompt goes to the T2I model exactly as written.
+                #
+                # num_tokens/truncated are reported here too, even though
+                # nothing was searched. They describe the INPUT, not the
+                # search: a gated prompt can be well past 77 tokens, and
+                # leaving the keys out would silently drop those rows
+                # from the truncation statistic while still counting
+                # them in its denominator.
+                n_tok = self.searcher.token_count(source)
                 return {
                     "text": source,
                     "gated_safe": True,
                     "original_safety": round(score, 6),
                     "modified_safety": round(score, 6),
                     "was_modified": False,
+                    "num_tokens": n_tok,
+                    "truncated": bool(n_tok > self.encoder.max_length),
+                    "num_encoded": 1,
                 }
 
         r = self.searcher.rewrite(source)

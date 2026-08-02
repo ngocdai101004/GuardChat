@@ -182,7 +182,7 @@ class SafetyAwareBeamSearch:
         # batching does. Dropped on return, which bounds the memory.
         cache: Dict[str, Tuple[float, float]] = {}
 
-        num_tokens = self._token_count(prompt)
+        num_tokens = self.token_count(prompt)
         truncated = bool(num_tokens > int(getattr(self.encoder, "max_length", 77)))
 
         orig_eos = self.encoder.eos_embedding([prompt])
@@ -381,7 +381,7 @@ class SafetyAwareBeamSearch:
                 cache[text] = (float(s), float(c))
         return [cache[p] for p in prompts]
 
-    def _token_count(self, prompt: str) -> int:
+    def token_count(self, prompt: str) -> int:
         """Untruncated token count, for the ``truncated`` diagnostic."""
         counter = getattr(self.encoder, "token_count", None)
         if counter is None:
