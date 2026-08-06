@@ -221,3 +221,7 @@ __marimo__/
 .claude/
 weights/
 *.partial.jsonl
+
+# Local-only: kept on disk, never pushed to the remote
+docs/
+experiment_results/
