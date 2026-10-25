@@ -8,9 +8,9 @@
   --text-secondary: #52685b;
   --text-light: #637c6c;
   --background-primary: #ffffff;
-  --background-secondary: #f0f8f1;
-  --background-accent: #dceede;
-  --border-color: #cfe3d3;
+  --background-secondary: #f8fbf8;
+  --background-accent: #edf5ee;
+  --border-color: #e2ece4;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -142,6 +142,10 @@ body {
 }
 
 .publication-header {
+  --text-primary: #101010;
+  --text-secondary: #202020;
+  --text-light: #303030;
+  color: #101010;
   background: linear-gradient(135deg, #d8efdf 0%, #e4f4df 55%, #edf8ee 100%);
   border-bottom: 1px solid var(--border-color);
 }
@@ -776,5 +780,9 @@ a:hover { color: var(--primary-hover); }
 .button.is-dark:hover { background: var(--primary-hover) !important; }
 .tag.is-light { background: var(--background-accent); color: var(--primary-hover); }
 .table { background: #ffffff; color: var(--text-primary); }
-.table thead th { background: #e7f3e9; color: var(--primary-hover); }
-.table.is-striped tbody tr:not(.is-selected):nth-child(even) { background: #f5faf6; }
+.table thead th { background: #f0f7f1; color: var(--primary-hover); }
+.table.is-striped tbody tr:not(.is-selected):nth-child(even) { background: #fafcfa; }
+
+.publication-header .subtitle,
+.publication-header .publication-authors,
+.publication-header .eql-cntrb { color: #101010; font-weight: 600; }
