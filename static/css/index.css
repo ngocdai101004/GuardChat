@@ -751,3 +751,16 @@ a:focus {
 
 
 
+
+/* Paper figures and section navigation use the existing page theme. */
+.page-navigation { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem 1.25rem; margin-top: 2rem; }
+.page-navigation a { font-weight: 600; }
+.paper-figure { margin: 1.5rem 0; }
+.paper-figure img { display: block; width: 100%; height: auto; border-radius: var(--border-radius); }
+.paper-figure figcaption, table caption { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; padding: 0.75rem 0; }
+.paper-figure figcaption { text-align: center; }
+.table-container { max-width: 100%; overflow-x: auto; }
+.paper-details { border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1rem; margin-top: 1.5rem; }
+.paper-details summary { cursor: pointer; font-weight: 600; }
+.paper-details p { margin-top: 0.75rem; }
+section[id] { scroll-margin-top: 1rem; }
