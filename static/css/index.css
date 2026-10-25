@@ -1,23 +1,23 @@
 /* Modern CSS Variables for consistent theming */
 :root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary-color: #64748b;
-  --accent-color: #0ea5e9;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-light: #94a3b8;
-  --background-primary: #f1f8f2;
-  --background-secondary: #e7f3e9;
+  --primary-color: #237449;
+  --primary-hover: #185435;
+  --secondary-color: #52685b;
+  --accent-color: #469b60;
+  --text-primary: #20392b;
+  --text-secondary: #52685b;
+  --text-light: #637c6c;
+  --background-primary: #ffffff;
+  --background-secondary: #f0f8f1;
   --background-accent: #dceede;
   --border-color: #cfe3d3;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-accent: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --gradient-subtle: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  --gradient-primary: linear-gradient(135deg, #237449 0%, #469b60 100%);
+  --gradient-accent: linear-gradient(135deg, #4b9e65 0%, #91c89b 100%);
+  --gradient-subtle: linear-gradient(135deg, #d8efdf 0%, #f0f8f1 100%);
   --border-radius: 12px;
   --border-radius-lg: 16px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -50,7 +50,7 @@ body {
 }
 
 .button.is-dark {
-  background: var(--text-primary) !important;
+  background: var(--primary-color) !important;
   border: none !important;
   color: white !important;
   box-shadow: var(--shadow-md);
@@ -141,8 +141,13 @@ body {
   border-radius: var(--border-radius-lg);
 }
 
+.publication-header {
+  background: linear-gradient(135deg, #d8efdf 0%, #e4f4df 55%, #edf8ee 100%);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .publication-header .hero-body {
-  padding: 6rem 1.5rem 4rem;
+  padding: 4rem 1.5rem;
 }
 
 .publication-authors {
@@ -764,3 +769,12 @@ a:focus {
 .paper-details summary { cursor: pointer; font-weight: 600; }
 .paper-details p { margin-top: 0.75rem; }
 section[id] { scroll-margin-top: 1rem; }
+
+/* Keep links, controls and data tables in the green-and-white palette. */
+a { color: var(--primary-color); }
+a:hover { color: var(--primary-hover); }
+.button.is-dark:hover { background: var(--primary-hover) !important; }
+.tag.is-light { background: var(--background-accent); color: var(--primary-hover); }
+.table { background: #ffffff; color: var(--text-primary); }
+.table thead th { background: #e7f3e9; color: var(--primary-hover); }
+.table.is-striped tbody tr:not(.is-selected):nth-child(even) { background: #f5faf6; }
